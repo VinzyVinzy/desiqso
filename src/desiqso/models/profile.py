@@ -124,6 +124,7 @@ class ProfileManager:
 
         # Returning the index
         return list(cls._profiles.keys()).index(name)
+    
 
 # Class representing a profile for easier handling of the synthetic H₂ profiles data for the spectra analysis
 @dataclass
@@ -175,14 +176,15 @@ class Profile:
             rf"$T_{{exc}} = {self.T_exc}\,\mathrm{{K}}, "
             rf"J = {'-'.join([str(J) for J in range(int(self.Jmax)+1)])}, "
             rf"N_0 = 10^{{{math.log10(self.N0)}}}\,\mathrm{{cm^{{-2}}}}, "
-            rf"R = {self.resolution_power}$"
+            rf"R = {self.resolution_power},"
+            rf"b = {self.b_param}\,\mathrm{{km.s^{{-1}}}}$"
         )
         # Returning the legend label
         return label
 
     # Factory method to create a `Profile` instance from a synthetic profile data for easier conversion of the loaded synthetic profile data into a python object to manipulate it for the spectra analysis.
     @classmethod
-    def from_synthetic(cls, resolution_power : float = 2000., N0 : float = 1e20, T_exc : float = 100., Jmax : int = 1, b_param : float = 5., pixel_size : float = 5.) -> "Profile":
+    def from_synthetic(cls, resolution_power : float = 2000., N0 : float = 1e20, T_exc : float = 100., Jmax : int = 1, b_param : float = 5., pixel_size : float = 5., save : bool = True, verbose : bool = True) -> "Profile":
         """
         Factory method to create a `Profile` instance from a synthetic profile data for easier 
         conversion of the loaded synthetic profile data into a python object to manipulate it 
@@ -190,7 +192,7 @@ class Profile:
         """
 
         # Generating the synthetic profile wavelength and flux using the provided parameters and the `generate_h2_profile` function
-        wavelength, flux = generate_h2_profile(resolution_power=resolution_power, N0=N0, T_exc=T_exc, Jmax=Jmax, b_param=b_param, pixel_size=pixel_size, show=False, save=True)
+        wavelength, flux = generate_h2_profile(resolution_power=resolution_power, N0=N0, T_exc=T_exc, Jmax=Jmax, b_param=b_param, pixel_size=pixel_size, save=save, verbose=verbose)
 
         # Returning the `Profile` instance corresponding to the synthetic profile
         return cls(
@@ -203,6 +205,20 @@ class Profile:
             resolution_power    = resolution_power,
             pixel_size          = pixel_size,
         )
+    
+    # Method to return a complete version of a synthetic profile
+    def get_complete_profile(self) -> "Profile":
+        """
+        This method returns a complete version of a synthetic profile, which is generated using the same 
+        parameters as the original profile but with a higher Jmax value (Jmax=7) to include more absorption 
+        features in the synthetic profile. This complete version of the synthetic profile can be used for 
+        visualization purposes to show all the absorption features that could be present in the spectrum, 
+        even if they were not included in the cross-correlation analysis to determine the best fit redshift 
+        and core transmission values.
+        """
+
+        # Returning the complete version of the synthetic profile
+        return self.from_synthetic(resolution_power=self.resolution_power, N0=self.N0, T_exc=self.T_exc, Jmax=7, b_param=self.b_param, pixel_size=self.pixel_size, save=False, verbose=False)
     
     # Method to save the synthetic profile data to a file for later use in the spectra analysis
     def save(self) -> None:
@@ -220,4 +236,5 @@ class Profile:
 
         # Informing user
         print(f"\n[INFO] Synthetic H2 profile successfully saved in file `{profile_filename}`.\n")
+    
     

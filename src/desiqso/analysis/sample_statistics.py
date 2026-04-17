@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 # Local imports
 from src.desiqso.config import (settings, CORRELATION_PARAM_THRESHOLD, SAMPLE_STATISTICS_FOLDER)
-from src.desiqso.constants import (ColNames, COLUMN_FILE_LABELS, Modes,)
+from src.desiqso.constants import (Categories, ColNames, COLUMN_FILE_LABELS, Modes,)
 from src.desiqso.models.dataset import AnalysisResults
 from src.desiqso.models.profile import ProfileManager
 from src.desiqso.utils.helpers import compute_column_weights
@@ -25,7 +25,12 @@ from src.desiqso.utils.helpers import compute_column_weights
 # ================================
 
 # Defining the colors for each category
-colors = {"confirmed":"green", "borderline":"orange", "rejected":"red", "other":"blue"}
+colors = {
+    Categories.CONFIRMED :    "green", 
+    Categories.BORDERLINE:    "orange", 
+    Categories.REJECTED  :    "red", 
+    Categories.OTHER     :    "blue",
+}
 
 # Defining the bins for the histograms of each column
 bins = {
@@ -37,12 +42,17 @@ bins = {
     ColNames.DEC        : np.arange(-40, 95, 5),
     ColNames.CORR_PARAM : np.arange(0., 1.025, 0.025),
     ColNames.CORE_TRANS : np.arange(-1., 1., 0.05),
-    ColNames.GRADE      : np.arange(-0.5, 6.5, 1),
+    ColNames.GRADE      : np.arange(-0.5, 7.5, 1),
     ColNames.REL_SPEED  : np.arange(-2600, 2600, 100),
 }
 
 # Definig the y positions for the text displaying the number of spectra for each category in the histograms
-y_pos_dict = {"other" : 0.95, "confirmed" : 0.90, "borderline" : 0.85, "rejected" : 0.80}
+y_pos_dict = {
+    Categories.OTHER     :    0.95, 
+    Categories.CONFIRMED :    0.90, 
+    Categories.BORDERLINE:    0.85, 
+    Categories.REJECTED  :    0.80,
+}
 
 
 

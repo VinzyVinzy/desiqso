@@ -16,6 +16,17 @@ DESI_RESOLUTION_POWER = 2650    # Base formula: np.mean(np.array([2000., 3300.])
 # Light speed (in km/s)
 C_KMS =  299792.458   # Base formula, from astropy.constants module: c.to("km/s").value
 
+# Enumeration for categories names to prevent typos
+class Categories(StrEnum):
+    """
+    This class contains the categories names used in the code.
+    """
+
+    CONFIRMED   = "confirmed"
+    BORDERLINE  = "borderline"
+    REJECTED    = "rejected"
+    OTHER       = "other"
+
 # Enumeration of column names to prevent typos
 class ColNames(StrEnum):
     """
@@ -70,9 +81,9 @@ class Modes(StrEnum):
     VALID       = "valid"
     NEW         = "new"
     PRELIMINARY = "preliminary"
-    CONFIRMED   = "confirmed"
-    REJECTED    = "rejected"
-    BORDERLINE  = "borderline"
+    CONFIRMED   = Categories.CONFIRMED
+    REJECTED    = Categories.REJECTED
+    BORDERLINE  = Categories.BORDERLINE
 
 # List of analysis modes associated with preliminary analysis
 PREL_LIST = {Modes.CONFIRMED, Modes.BORDERLINE, Modes.REJECTED}

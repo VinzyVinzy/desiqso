@@ -36,13 +36,12 @@ NUMBER_OF_CORES = min(os.cpu_count(), 6)
 def run_cross_correlation_analysis(mode : str = Modes.ALL) -> None:
     """
     Function performing the cross-correlation analysis on the downloaded data respecting the selected 
-    mode ("all", "random", "preliminary", "confirmed", "borderline" or "rejected"). It loads the spectra
+    mode (see `Modes` enum). It loads the spectra
     from the local `.fits` files and performs the cross-correlation analysis on them using parallel
     processing. The results are saved in a `.txt` file, unique for each synthetic profiles. Also, 
     spectra with low SNR (< SNR_THRESHOLD) are not processed and are saved in the `low_snr.txt` file.
 
-    :param MODE: Mode of selection. Can be "all", "random", "preliminary", "confirmed", "borderline" or 
-    "rejected".
+    :param MODE: Mode of selection. See `Modes` enum.
     :type MODE: str
     :return: This function does not return anything.
     :rtype: None
@@ -132,7 +131,7 @@ def select_spectra_for_analysis(mode:str = Modes.ALL) -> list :
         # Load preliminary analysis results
         AnalysisResults.load_preliminary_results()
         # Define data groups using preliminary analysis
-        spectra_files   = set(AnalysisResults._preliminary_results[f"{mode.value}_candidates"][ColNames.FILENAME])
+        spectra_files   = set(AnalysisResults._preliminary_results[f"{mode}_candidates"][ColNames.FILENAME])
     
     elif mode == Modes.PRELIMINARY:
         # Load preliminary analysis results

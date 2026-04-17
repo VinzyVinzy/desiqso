@@ -9,7 +9,7 @@ It currently contains the following functions:
 """
 
 # Importing necessary libraries
-from astropy.convolution import convolve, Box1DKernel
+from astropy.convolution import (convolve, Box1DKernel,)
 import matplotlib.colors as mcolors
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
@@ -17,11 +17,12 @@ from matplotlib.lines import Line2D
 import numpy as np
 import os
 import pandas as pd
-from scipy.stats import binned_statistic, gaussian_kde
+from scipy.stats import (binned_statistic, gaussian_kde,)
+from tqdm import tqdm
 
 # Local imports
 from src.desiqso.config import (settings, CROSS_CORRELATION_FIGURES_FOLDER, CORRELATION_PARAM_THRESHOLD, STATISTICS_PLOTS_FOLDER,)
-from src.desiqso.constants import (C_KMS, ColNames, Modes,)
+from src.desiqso.constants import (C_KMS, Categories, ColNames, COLUMN_FILE_LABELS, Modes,)
 from src.desiqso.models.dataset import AnalysisResults
 from src.desiqso.models.profile import (Profile, ProfileManager,)
 from src.desiqso.utils.helpers import normalize
@@ -34,23 +35,45 @@ from src.desiqso.utils.helpers import normalize
 # Global variable to store the sizes of the plots
 plot_sizes = {
     ColNames.CORR_PROB  : [0, 0], 
-    ColNames.CORR_COEFF : [0, 0], 
-    ColNames.CORR_PARAM : [0, 0], 
-    ColNames.CORE_TRANS : [0, 0],
-    ColNames.Z          : [0, 0], 
-    ColNames.QSO_Z      : [0, 0], 
-    ColNames.SNR        : [0, 0], 
-    ColNames.GRADE      : [0, 0], 
-    ColNames.REL_SPEED  : [0, 0]
+    ColNames.CORR_COEFF : [-0.02, 1.02], 
+    ColNames.CORR_PARAM : [-0.02, 1.02], 
+    ColNames.CORE_TRANS : [-0.55, 0.75],
+    ColNames.Z          : [2.5, 6.0], 
+    ColNames.QSO_Z      : [2.5, 6.0], 
+    ColNames.SNR        : [0, 50], 
+    ColNames.GRADE      : [-0.5, 6.5], 
+    ColNames.REL_SPEED  : [-2600, 2600],
 }
 # Defining the alpha value for each group
-alphas = {"confirmed":1., "borderline":.9, "rejected":.75, "other":.5}
+alphas = {
+    Categories.CONFIRMED : 1.0,
+    Categories.BORDERLINE: .90,
+    Categories.REJECTED  : .75,
+    Categories.OTHER     : .50,
+}
+
 # Defining the markers for each group
-markers = {"confirmed":"o", "borderline":"v", "rejected":"X", "other":"s"}
+markers = {
+    Categories.CONFIRMED : "o",
+    Categories.BORDERLINE: "v",
+    Categories.REJECTED  : "X",
+    Categories.OTHER     : "s"
+}
 # Defining the markers size for each group
-sizes = {"confirmed":80, "borderline":50, "rejected":50, "other":20}
+sizes = {
+    Categories.CONFIRMED : 80,
+    Categories.BORDERLINE: 50,
+    Categories.REJECTED  : 50,
+    Categories.OTHER     : 20
+}
 # Defining the edgecolors for each group
-edgecolors = {"confirmed":"red", "borderline":"none", "rejected":"none", "other":"none"}
+edgecolors = {
+    Categories.CONFIRMED : "red",
+    Categories.BORDERLINE: "none",
+    Categories.REJECTED  : "none",
+    Categories.OTHER     : "none"
+}
+
 
 
 # Function to plot the correlation coefficients as a function of redshift for a given spectrum
@@ -337,10 +360,10 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
     data = AnalysisResults.results_survey(mode, thresholds_dict=thresholds, profile_name=profile_name,)
 
     # Loop on the data and the associated mode
-    for x_key, y_key in plot_pairs:
+    for x_key, y_key in tqdm(plot_pairs, desc="Plotting statistics", unit="plot"):
 
         # Inform user
-        print(f"[INFO] Plotting {x_key} vs {y_key}...\n")
+        tqdm.write(f"[INFO] Plotting {x_key} vs {y_key}...\n")
 
         # Setting plot type depending on the x-axis values
         PLOT_TYPE = "bin" if x_key in [ColNames.Z, ColNames.SNR, ColNames.GRADE] else "scatter"
@@ -381,7 +404,7 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
         # Plot formatting
         # =========
 
-        # Plotting the line corresponding to the threshold values
+        # Plotting the line corresponding to the threshold value of the correlation parameter
         if x_key == ColNames.CORR_PARAM:
             plt.axvline(x=CORRELATION_PARAM_THRESHOLD, color="black", linestyle="--", linewidth=2)
         if y_key == ColNames.CORR_PARAM:
@@ -411,7 +434,7 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
         # Plotting the legend only in "scatter" mode
         if PLOT_TYPE == "scatter":
             # Defining the marker legend
-            marker_legend = [Line2D([0], [0], marker=marker, color="black", linestyle="None", markersize=8, label=f"{group}") for group, marker in markers.items()]
+            marker_legend = [Line2D([0], [0], marker=marker, color="black", linestyle="None", markersize=8, label=f"{group}", markeredgecolor=edgecolors[group], linewidth=1.,) for group, marker in markers.items()]
             # Adding the legend to the plot
             plt.legend(handles=marker_legend, title="Groups", loc="upper right")
 
@@ -420,9 +443,6 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
         y_low, y_high = np.percentile(y_data, [0.01, 99.99])
         x_min, x_max = min(plot_sizes[x_key][0], x_low), max(plot_sizes[x_key][1], x_high)
         y_min, y_max = min(plot_sizes[y_key][0], y_low), max(plot_sizes[y_key][1], y_high)
-        # Update the plot size dictionary
-        plot_sizes[x_key] = [x_min, x_max]
-        plot_sizes[y_key] = [y_min, y_max]
 
         # Set the plot x-axis limits dynamically with mode
         if x_key == ColNames.CORR_COEFF:
@@ -454,11 +474,11 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
         # ============
             
         # Generating plot name
-        plot_name = f"{"-".join(x_key.split(" "))}_vs_{"-".join(y_key.split(" "))}_distribution"
+        plot_name = f"{COLUMN_FILE_LABELS[x_key]}_vs_{COLUMN_FILE_LABELS[y_key]}_distribution"
         # Adding thresholds to the plot name
         for key, (min_val, max_val) in thresholds.items():
             if min_val is not None or max_val is not None:
-                plot_name += f"_{key}-{min_val if min_val is not None else 'None'}-{max_val if max_val is not None else 'None'}"
+                plot_name += f"_{COLUMN_FILE_LABELS[key]}-{min_val if min_val is not None else 'None'}-{max_val if max_val is not None else 'None'}"
         # Generating plot path, adding the mode and profile name to the path
         savepath = os.path.join((STATISTICS_PLOTS_FOLDER), f"{profile_name}_{mode}/")
         # If the directory does not exist, create it
@@ -466,7 +486,7 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
         plt.savefig(savepath + f"{plot_name}.png", dpi=600)
 
         # Inform the user
-        print(f"[INFO] Plot saved to {savepath}{plot_name}\n")
+        tqdm.write(f"[INFO] Plot saved to {savepath}{plot_name}\n")
 
 # Function to plot a 2D contours of the distribution in a scatter plot
 def plot_distribution_with_contours(x_data : pd.DataFrame, y_data : pd.DataFrame, ax : plt.Axes) -> None:
@@ -562,7 +582,6 @@ def plot_standard_bin(x_data : pd.DataFrame, y_data : pd.DataFrame, ax : plt.Axe
     :type ax: plt.Axes
     """
 
-
     # Creating the binned statistic
     bin_means, bin_edges, _ = binned_statistic(x_data, y_data, statistic="mean", bins=20)
     bin_std, _, _ = binned_statistic(x_data, y_data, statistic="std", bins=bin_edges)
@@ -587,8 +606,7 @@ def plot_scatter(data : pd.DataFrame, x_key : str, y_key : str, ax : plt.Axes) -
     :type ax: plt.Axes
     """
 
-    # Defining the categories to plot
-    categories = ["other","borderline","rejected","confirmed"]
+    categories = [Categories.OTHER, Categories.REJECTED, Categories.BORDERLINE, Categories.CONFIRMED]
 
     # Loop on the data groups
     for category in categories:
@@ -599,17 +617,17 @@ def plot_scatter(data : pd.DataFrame, x_key : str, y_key : str, ax : plt.Axes) -
         y_values = group[y_key]
         grades   = group[ColNames.GRADE]
         # Scatter plot of the current data group
-        plt.scatter(x_values, y_values, c=grades, cmap="viridis", norm=mcolors.Normalize(vmin=0, vmax=5), marker=markers[category], s=sizes[category], alpha=alphas[category], edgecolors=edgecolors[category], linewidths=0.5,)
+        plt.scatter(x_values, y_values, c=grades, cmap="viridis", norm=mcolors.Normalize(vmin=0, vmax=6), marker=markers[category], s=sizes[category], alpha=alphas[category], edgecolors=edgecolors[category], linewidths=1.,)
     
     # Creating the colorbar and initializing it
-    sm = cm.ScalarMappable(cmap="viridis", norm=mcolors.Normalize(vmin=0, vmax=5))
+    sm = cm.ScalarMappable(cmap="viridis", norm=mcolors.Normalize(vmin=0, vmax=6))
     sm.set_array([])
     # Adding the colorbar to the plot
     cbar = plt.colorbar(sm, ax=ax)
     # Labeling the colorbar
     cbar.set_label("Grade")
     # Setting the colorbar ticks
-    cbar.set_ticks(range(6))
+    cbar.set_ticks(range(7))
 
 # Entry point for `plot-statistics` command
 def plot_statistics(plot_pairs : list[tuple[str, str]], thresholds : dict[str, tuple[float]], mode : str = Modes.ALL) -> None:

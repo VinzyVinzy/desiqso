@@ -25,7 +25,7 @@ from src.desiqso.constants import C_KMS
 
 
 # Function to synthetize an H₂ profile from a list of bands and a few parameters
-def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_exc : float = 100., Jmax : int = 1, b_param : float = 5., pixel_size : float = 5., show : bool = True, save : bool = True) -> tuple[np.ndarray, np.ndarray]:
+def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_exc : float = 100., Jmax : int = 1, b_param : float = 5., pixel_size : float = 5., save : bool = False, verbose : bool = True) -> tuple[np.ndarray, np.ndarray]:
     """
     This function generates a synthetic H₂ profile from a list of bands and a few parameters. The
     bands currently supported are: BX(0-0), BX(1-0), BX(2-0), BX(3-0), BX(4-0), BX(5-0)), BX(6-0), 
@@ -43,10 +43,10 @@ def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_e
     :param b_param: The velocity width of the Voigt profile (Doppler parameter). Default is 5.
     :type b_param: float, optional
     :param pixel_size: The pixel size of the synthetic profile. Default is 5.
-    :param show: Flag to show the synthetic profile. Default is True.
-    :type show: bool, optional
-    :param save: Flag to save the synthetic profile. Default is True.    
+    :param save: Flag to save the synthetic profile. Default is False.    
     :type save: bool, optional
+    :param verbose: Flag to print information about the synthetic profile. Default is True.
+    :type verbose: bool, optional
     :return: A tuple containing the wavelength array and the flux array of the synthetic profile.
     :rtype: tuple[np.ndarray, np.ndarray]
     """
@@ -56,14 +56,15 @@ def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_e
     # ================
 
     # Inform user of selected parameters
-    print(f"\n[INFO] Generating synthetic profile with the following configuration:\n")
-    print(f"[INFO] - 2 rotational levels (J=0,1)")
-    print(f"[INFO] - 10 bands (BX(0-0), BX(1-0), BX(2-0), BX(3-0), BX(4-0), BX(5-0)), BX(6-0), BX(7-0), BX(8-0), BX(9-0))")
-    print(f"[INFO] - 6 bands (CX(0-0), CX(1-0), CX(2-0), CX(3-0), CX(4-0), CX(5-0))")
-    print(f"[INFO] - Resolution power : {resolution_power}")
-    print(f"[INFO] - Constant pixel size in km/s : {pixel_size} km/s")
-    print(f"[INFO] - Excitation temperature of ground state : {T_exc} K")
-    print(f"[INFO] - Velocity width of the Voigt profile (Doppler parameter) : {b_param} km/s\n")
+    if verbose:
+        print(f"\n[INFO] Generating synthetic profile with the following configuration:\n")
+        print(f"[INFO] - 2 rotational levels (J=0,1)")
+        print(f"[INFO] - 10 bands (BX(0-0), BX(1-0), BX(2-0), BX(3-0), BX(4-0), BX(5-0)), BX(6-0), BX(7-0), BX(8-0), BX(9-0))")
+        print(f"[INFO] - 6 bands (CX(0-0), CX(1-0), CX(2-0), CX(3-0), CX(4-0), CX(5-0))")
+        print(f"[INFO] - Resolution power : {resolution_power}")
+        print(f"[INFO] - Constant pixel size in km/s : {pixel_size} km/s")
+        print(f"[INFO] - Excitation temperature of ground state : {T_exc} K")
+        print(f"[INFO] - Velocity width of the Voigt profile (Doppler parameter) : {b_param} km/s\n")
 
     # Update and apply matplotlib settings
     settings["xtick.top"] = True
@@ -116,7 +117,8 @@ def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_e
     # ================
 
     # Inform user
-    print(f"[INFO] Selecting lines to add to the synthetic profile...\n")
+    if verbose:
+        print(f"[INFO] Selecting lines to add to the synthetic profile...\n")
 
     # Initialize an empty list for selected lines to add
     selected_lines = []
@@ -136,10 +138,11 @@ def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_e
     # ================
 
     # Inform user
-    print(f"[INFO] Retrieving lines properties...\n")
+    if verbose:
+        print(f"[INFO] Retrieving lines properties...\n")
 
-    # Load all available lines data from the `VoigtFit` package
-    lines_data = lineList   
+    # Load all available lines data from the `VoigtFit` package in a dictionary for easier retrieval of the selected lines properties
+    lines_dict = {line[0] : line for line in lineList}
 
     # Initialize lists for selected lines properties
     lambda0             = []
@@ -147,13 +150,13 @@ def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_e
     gamma               = []
 
     # Retrieve the properties of the selected lines
-    for line in lines_data:
+    for line_name in selected_lines:
         # If the line is in the selected lines list
-        if line[0] in selected_lines:
-            # Add its properties to the lists
-            lambda0.append(line[2])
-            oscillator_strength.append(line[3])
-            gamma.append(line[4])
+        line = lines_dict[line_name]
+        # Add its properties to the lists
+        lambda0.append(line[2])
+        oscillator_strength.append(line[3])
+        gamma.append(line[4])
 
     # Converting lists to arrays
     lambda0             = np.array(lambda0, dtype=float)
@@ -165,7 +168,8 @@ def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_e
     # ================
 
     # Inform user
-    print(f"[INFO] Generating synthetic profile...\n")
+    if verbose:
+        print(f"[INFO] Generating synthetic profile...\n")
 
     # Initalizing lambda0 and optical depth arrays
     wavelength = wl_grid_const_speed(800, 1400, pixel_size)
@@ -192,7 +196,8 @@ def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_e
     # ================
 
     # Inform user
-    print(f"[INFO] Plotting synthetic profile...\n")
+    if verbose:
+        print(f"[INFO] Plotting synthetic profile...\n")
 
     # Initializing the plot
     _, ax = plt.subplots(figsize=(12,8))
@@ -223,7 +228,6 @@ def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_e
 
     # Saving the synthetic H₂ profile, if required
     if save:
-
         # Generating the synthetic H₂ profile name
         plot_name = f"h2_profile_res-{resolution_power:.1f}_n0-{math.log10(N0):.1f}_J-{"-".join([str(J) for J in range(NUM_ROTATIONAL_LEVELS)])}_Texc-{T_exc}_b-{b_param}_pix-{pixel_size}.png"
         # Creating the output folder
@@ -235,10 +239,6 @@ def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_e
         # Informing user
         print(f"[INFO] Synthetic H2 profile successfully saved in {SYNTHETIC_PROFILES_FOLDER}plots/{plot_name}\n")
     
-    # Showing the plot, if required
-    if show:
-        plt.show()
-
     # Closing the plot
     plt.close()
 
