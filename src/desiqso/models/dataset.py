@@ -33,7 +33,7 @@ class AnalysisResults:
     """
 
     # Class attribute to store the analysis results
-    _results : dict[str, pd.DataFrame] = None
+    _results : pd.DataFrame = None
     # Class attribute to store another analysis results
     _preliminary_results : dict[str, pd.DataFrame] = None
     # Class attribute to store the expected core transmissions
@@ -160,7 +160,7 @@ class AnalysisResults:
             # Loading preliminary analysis results as arrays for faster access
             col_names = [ColNames.FILENAME, ColNames.NAME, ColNames.RA, ColNames.DEC, ColNames.QSO_Z, ColNames.Z, ColNames.CORR_COEFF, ColNames.CORR_PROB, ColNames.CORE_TRANS, ColNames.SNR]
             cls._preliminary_results["borderline_candidates"] = pd.read_csv(PRELIMINARY_DATA_PATH+"borderline_candidates.txt", sep=r"\s+", header=None, names=col_names)
-            cls._preliminary_results["confirmed_candidates"]  = pd.read_csv(PRELIMINARY_DATA_PATH+"confirmed_candidates.txt", sep=r"\s+", header=None, names=col_names)
+            cls._preliminary_results["confirmed_candidates"]  = pd.read_csv(PRELIMINARY_DATA_PATH+"confirmed_candidates.txt", sep=r"\s+", header=None, names=col_names+["#"])
             cls._preliminary_results["rejected_candidates"]   = pd.read_csv(PRELIMINARY_DATA_PATH+"rejected_candidates.txt", sep=r"\s+", header=None, names=col_names+["#"])
             
         # Inform user
@@ -261,7 +261,7 @@ class AnalysisResults:
         elif mode == Modes.PRELIMINARY:
             table = table[table[ColNames.CATEGORY].isin(PREL_LIST)]
         elif mode == Modes.RANDOM:
-            table = table.sample(n=10000, axis=1)
+            table = table.sample(n=100, axis=1)
         elif mode == Modes.VALID:
             table = table[table[ColNames.IS_VALID] == 1]
 

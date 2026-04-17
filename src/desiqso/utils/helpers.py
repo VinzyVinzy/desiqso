@@ -143,3 +143,18 @@ def _is_valid(row : pd.Series) -> int:
    
     # Return 1 if the row is valid, 0 otherwise
     return 1 if condition else 0
+
+#
+def compute_column_weights(table : pd.DataFrame, column : str) -> np.ndarray:
+    """
+    This function computes the weights for a given column in a table. The weights are computed as the inverse of the number of occurrences of each value in the column.
+
+    :param table: The table to compute the weights for.
+    :type table: pd.DataFrame
+    :param column: The column to compute the weights for.
+    :type column: str
+    :return np.ndarray: The weights for each value in the column.
+    """
+
+    # Return the computed weights
+    return np.ones_like(table[column]) / len(table)

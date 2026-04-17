@@ -11,6 +11,7 @@ if __name__ == "__main__":
     # Calling (if intended) the function to check that all the quasar spectra are correctly downloaded
     if True:
         ra_list = check_spectra_downloaded()
+        os._exit(1)
 
     # Calling the function to download first the preliminary analysis results
     download_preliminary_spectra()

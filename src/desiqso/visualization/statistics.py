@@ -49,6 +49,8 @@ alphas = {"confirmed":1., "borderline":.9, "rejected":.75, "other":.5}
 markers = {"confirmed":"o", "borderline":"v", "rejected":"X", "other":"s"}
 # Defining the markers size for each group
 sizes = {"confirmed":80, "borderline":50, "rejected":50, "other":20}
+# Defining the edgecolors for each group
+edgecolors = {"confirmed":"red", "borderline":"none", "rejected":"none", "other":"none"}
 
 
 # Function to plot the correlation coefficients as a function of redshift for a given spectrum
@@ -585,14 +587,19 @@ def plot_scatter(data : pd.DataFrame, x_key : str, y_key : str, ax : plt.Axes) -
     :type ax: plt.Axes
     """
 
+    # Defining the categories to plot
+    categories = ["other","borderline","rejected","confirmed"]
+
     # Loop on the data groups
-    for category, group in data.groupby(ColNames.CATEGORY):
+    for category in categories:
+        # Filtering the data for the current group
+        group = data[data[ColNames.CATEGORY] == category]
         # Retrieving the x and y values related to the current data group
         x_values = group[x_key]
         y_values = group[y_key]
         grades   = group[ColNames.GRADE]
         # Scatter plot of the current data group
-        plt.scatter(x_values, y_values, c=grades, cmap="viridis", norm=mcolors.Normalize(vmin=0, vmax=5), marker=markers[category], s=sizes[category], alpha=alphas[category])
+        plt.scatter(x_values, y_values, c=grades, cmap="viridis", norm=mcolors.Normalize(vmin=0, vmax=5), marker=markers[category], s=sizes[category], alpha=alphas[category], edgecolors=edgecolors[category], linewidths=0.5,)
     
     # Creating the colorbar and initializing it
     sm = cm.ScalarMappable(cmap="viridis", norm=mcolors.Normalize(vmin=0, vmax=5))

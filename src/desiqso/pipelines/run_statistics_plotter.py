@@ -12,11 +12,12 @@ if __name__ == "__main__":
 
     # Defining the pairs of statistics to plot
     plot_pairs = [
-        (ColNames.CORR_PARAM, ColNames.CORE_TRANS),
-        (ColNames.SNR, ColNames.QSO_Z),
-        (ColNames.GRADE, ColNames.CORR_PARAM),
-        (ColNames.CORR_PARAM, ColNames.GRADE),
-        (ColNames.QSO_Z, ColNames.Z),
+#        (ColNames.CORR_PARAM, ColNames.CORE_TRANS),
+#        (ColNames.SNR, ColNames.QSO_Z),
+#        (ColNames.GRADE, ColNames.CORR_PARAM),
+#        (ColNames.CORR_PARAM, ColNames.GRADE),
+#        (ColNames.QSO_Z, ColNames.Z),
+        (ColNames.CORR_COEFF, ColNames.CORE_TRANS),
     ]
 
     # Defining thresholds dictionary

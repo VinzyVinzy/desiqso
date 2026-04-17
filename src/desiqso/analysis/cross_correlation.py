@@ -284,9 +284,9 @@ def cross_correlate(record : SpectrumRecord) -> CrossCorrelationResult:
     for profile in ProfileManager.all_profiles():
 
         # Initialize arrays to store the analysis results for the current synthetic H₂ profile
-        correlation_coefficients   = np.full(len(z_values), np.nan)
-        correlation_probabilities  = np.full(len(z_values), np.nan)
-        core_transmissions_values  = np.full(len(z_values), np.nan)
+        correlation_coefficients   = np.full_like(z_values, np.nan)
+        correlation_probabilities  = np.full_like(z_values, np.nan)
+        core_transmissions_values  = np.full_like(z_values, np.nan)
         core_transmissions_levels  = []
 
         # Loop on redshift values to perform the cross-correlation analysis for each redshift values

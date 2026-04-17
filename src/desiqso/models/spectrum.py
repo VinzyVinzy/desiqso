@@ -107,7 +107,8 @@ class SpectrumRecord:
         flux_region = flux_region[np.isfinite(flux_region)]
 
         # Compute constant continuum value
-        continuum_value = np.quantile(flux_region, 0.75) * 4./3.
+        #continuum_value = np.quantile(flux_region, 0.75) * 4./3.
+        continuum_value = np.quantile(flux_region, 0.80)
 
         # Check if the computed value is not valid, which is the case if it is finite and greater than 0
         if not _is_valid_continuum(continuum_value):

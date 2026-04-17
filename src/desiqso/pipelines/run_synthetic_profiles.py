@@ -15,8 +15,8 @@ if __name__ == "__main__":
         pixel_size      = 5.,                   # Pixel size in km/s for the synthetic profile
         T_exc           = 100.,                 # Excitation temperature of the J=0 level in K
         Jmax            = 1,                    # Maximum rotational level to include in the synthetic profile (0 and 1 by default)
-        N0              = 1e19,                 # Column density of the J=0 level in cm^-2
-        b_param         = 5.,                   # Doppler parameter for the synthetic profile in km/s
+        N0              = 1e20,                 # Column density of the J=0 level in cm^-2
+        b_param         = 3.,                   # Doppler parameter for the synthetic profile in km/s
     )
     # Saving the generated synthetic H₂ profile in the `synthetic_profiles` folder
     new_profile.save()

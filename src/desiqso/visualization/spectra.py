@@ -171,7 +171,7 @@ def plot_spectra(mode : str = Modes.ALL, thresholds_dict : dict = {}) -> None:
     ProfileManager.load_all()
 
     # Retrieving the table
-    table = AnalysisResults.results_survey(mode = mode, profile_name="all", thresholds_dict=thresholds_dict,)
+    table = AnalysisResults.results_survey(mode=mode, profile_name="all", thresholds_dict=thresholds_dict,)
 
     # Define folderpath using the mode and thresholds
     folderpath = f"{mode}"

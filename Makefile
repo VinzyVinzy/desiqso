@@ -53,6 +53,10 @@ plot-statistics:
 dependencies-analysis:
 	$(PYTHON) $(DESIQSO)/pipelines/run_dependency.py
 
+# Sample statistics command
+sample-statistics:
+	$(PYTHON) $(DESIQSO)/pipelines/run_sample_statistics.py
+
 # Run analysis command
 run-analysis:
 	$(PYTHON) $(DESIQSO)/pipelines/run_analysis.py

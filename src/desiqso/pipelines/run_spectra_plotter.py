@@ -22,4 +22,4 @@ if __name__ == "__main__":
     }
 
     # Calling function to plot all spectra
-    plot_spectra(mode=Modes.NEW, thresholds_dict=thresholds)
+    plot_spectra(mode=Modes.ALL, thresholds_dict=thresholds)
