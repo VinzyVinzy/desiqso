@@ -103,6 +103,9 @@ SPECTRA_PLOTS_FOLDER = RESULTS_FOLDER + "figures/spectra/"
 # Path to the statistics plots folder
 STATISTICS_PLOTS_FOLDER = RESULTS_FOLDER + "figures/statistics/"
 
+# Path to the sample statistics results folder
+SAMPLE_STATISTICS_FOLDER = RESULTS_FOLDER + "figures/sample_statistics/"
+
 # Path to the synthetic profiles folder
 SYNTHETIC_PROFILES_FOLDER = "data/processed/synthetic_profiles/"
 

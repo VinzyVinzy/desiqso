@@ -43,6 +43,22 @@ class ColNames(StrEnum):
     IS_VALID        =   "Valid flag"
     PROFILE         =   "Profile name"
 
+# Dictionary of the columns labels for the filenames of the plots to save
+COLUMN_FILE_LABELS = {
+    ColNames.RA              : "ra",
+    ColNames.DEC             : "dec",
+    ColNames.QSO_Z           : "qso-z",
+    ColNames.Z               : "abs-z",
+    ColNames.CORR_COEFF      : "corr-coeff",
+    ColNames.CORR_PROB       : "corr-prob",
+    ColNames.CORE_TRANS      : "core-trans",
+    ColNames.CORR_PARAM      : "corr-param",
+    ColNames.SNR             : "snr",
+    ColNames.CONTINUUM       : "continuum",
+    ColNames.GRADE           : "grade",
+    ColNames.REL_SPEED       : "rel-speed",
+}
+
 # Enumeration of analysis modes to prevent typos
 class Modes(StrEnum):
     """

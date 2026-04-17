@@ -9,6 +9,7 @@ Currently, it contains the following functions:
 - `_is_valid_continuum(continuum: float)`: checks if a given value is a valid continuum value.
 - `compute_relative_speed(z_abs: float, z_qso: float)`: computes the relative speed between two redshifts.
 - `_is_valid(row: pd.Series)`: checks if a row in a `pd.DataFrame` object is associated with a valid spectrum.
+- `compute_column_weights(table: pd.DataFrame, column: str)`: computes the weights for a given column in a table.
 """
 
 # Importing necessary libraries
@@ -144,7 +145,7 @@ def _is_valid(row : pd.Series) -> int:
     # Return 1 if the row is valid, 0 otherwise
     return 1 if condition else 0
 
-#
+# Utility function to compute the weights for a given column in a table
 def compute_column_weights(table : pd.DataFrame, column : str) -> np.ndarray:
     """
     This function computes the weights for a given column in a table. The weights are computed as the inverse of the number of occurrences of each value in the column.
