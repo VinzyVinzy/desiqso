@@ -583,7 +583,7 @@ def plot_standard_bin(x_data : pd.DataFrame, y_data : pd.DataFrame, ax : plt.Axe
     """
 
     # Creating the binned statistic
-    bin_means, bin_edges, _ = binned_statistic(x_data, y_data, statistic="mean", bins=20)
+    bin_means, bin_edges, _ = binned_statistic(x_data, y_data, statistic="mean", bins=15)
     bin_std, _, _ = binned_statistic(x_data, y_data, statistic="std", bins=bin_edges)
     # Computing the bin centers and widths
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2

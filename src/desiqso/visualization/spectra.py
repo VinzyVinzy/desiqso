@@ -61,6 +61,7 @@ def plot_spectrum(row : pd.Series, folderpath : str) -> None :
 
     # Update plot settings
     settings["ytick.right"] = True
+    settings["xtick.top"]   = False
     plt.rcParams.update(**settings)
 
     # ============

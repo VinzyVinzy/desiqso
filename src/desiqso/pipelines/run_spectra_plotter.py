@@ -16,10 +16,10 @@ if __name__ == "__main__":
         ColNames.CORR_COEFF :   (None, None),
         ColNames.CORR_PARAM :   (None, None),
         ColNames.Z          :   (None, None),
-        ColNames.SNR        :   (15, None),
+        ColNames.SNR        :   (None, None),
         ColNames.GRADE      :   (None, None),
         ColNames.REL_SPEED  :   (None, None),
     }
 
     # Calling function to plot all spectra
-    plot_spectra(mode=Modes.NEW, thresholds_dict=thresholds)
+    plot_spectra(mode=Modes.CONFIRMED, thresholds_dict=thresholds)

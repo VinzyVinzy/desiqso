@@ -89,7 +89,7 @@ PLOT_2D_DISTRIBUTION = False
 FIGURES_FOLDER = "outputs/figures/"
 
 # Path to the folder containing the results
-RESULTS_FOLDER = "outputs/N0-20_J-0-1_sample-stat_all/"
+RESULTS_FOLDER = "outputs/N0-20_J-0-1_4-bands_sample/"
 
 # Path to the folder containing the spectra data
 PRELIMINARY_DATA_PATH = "data/raw/preliminary/"

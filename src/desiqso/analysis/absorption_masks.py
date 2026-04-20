@@ -11,8 +11,8 @@ from scipy.interpolate import interp1d
 from scipy.signal import find_peaks
 
 # Local imports
-from src.desiqso.config import ABSORPTION_FEATURE_THRESHOLD, CORE_ABSORPTION_FEATURE_THRESHOLD
-from src.desiqso.constants import H2_LYMAN_WERNER_BANDS
+from src.desiqso.config import (ABSORPTION_FEATURE_THRESHOLD, CORE_ABSORPTION_FEATURE_THRESHOLD,)
+from src.desiqso.constants import (H2_LYMAN_WERNER_BANDS, NUMBER_OF_BANDS,)
 from src.desiqso.models.profile import Profile
 
 # Function to compute masks for H₂ absorption features and rebin synthetic profile
@@ -103,10 +103,10 @@ def compute_h2_absorption_masks(wavelength : np.ndarray, redshift : float, profi
     # Compute the peak with the highest signal of the last group
     best = max(current_group, key=lambda x: signal[x])
     selected_peaks.append(best)
-    # Convert the list to an array and only keep the 6 deepest absorption features
-    selected_peaks = np.array(selected_peaks)[:6]
+    # Convert the list to an array and only keep the deepest absorption features
+    selected_peaks = np.array(selected_peaks)[:NUMBER_OF_BANDS]
     # If less than 6 peaks are found, print a warning message for degu purposes
-    if len(selected_peaks) != 6:
+    if len(selected_peaks) != NUMBER_OF_BANDS:
         print(f"[DEBUG] Only {len(selected_peaks)} peaks found for redshift {redshift}")
         
     # Setting the width of the absorption feature to 10 pixels
