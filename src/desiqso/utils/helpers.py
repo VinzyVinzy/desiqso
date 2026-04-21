@@ -98,7 +98,7 @@ def compute_grade(J_core_transmissions : list[float]) -> int:
     """
 
     # Return the number of core transmissions below the threshold
-    return sum(core_trans < CORE_TRANSMISSION_THRESHOLD for core_trans in J_core_transmissions[1:])
+    return sum(core_trans < CORE_TRANSMISSION_THRESHOLD for core_trans in J_core_transmissions)
 
 # Utility function to check that the computed continuum is valid
 def _is_valid_continuum(continuum : float) -> bool:

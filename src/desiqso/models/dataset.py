@@ -10,7 +10,7 @@ import pandas as pd
 
 # Local imports
 from src.desiqso.config import (PRELIMINARY_DATA_PATH, CROSS_CORRELATION_RESULTS_FOLDER, NEW_CANDIDATES_PATH, EXPECTED_CORE_TRANSMISSIONS_PATH, SNR_THRESHOLD,)
-from src.desiqso.constants import (ColNames, Modes, PREL_LIST,)
+from src.desiqso.constants import (Categories, ColNames, Modes, PREL_LIST,)
 from src.desiqso.utils.helpers import (parse_cell, compute_grade, compute_relative_speed, _is_valid,)
 
 # Class to store the results of the cross-correlation analysis
@@ -287,4 +287,4 @@ def which_data_group(filename: str) -> str:
         Identify the category (data group) of a spectrum.
         """
         # Retrurn the category
-        return "confirmed" if filename in set(AnalysisResults._preliminary_results["confirmed_candidates"][ColNames.FILENAME]) else ("borderline" if filename in set(AnalysisResults._preliminary_results["borderline_candidates"][ColNames.FILENAME]) else ("rejected" if filename in set(AnalysisResults._preliminary_results["rejected_candidates"][ColNames.FILENAME]) else "other"))
+        return Categories.CONFIRMED if filename in set(AnalysisResults._preliminary_results["confirmed_candidates"][ColNames.FILENAME]) else (Categories.BORDERLINE if filename in set(AnalysisResults._preliminary_results["borderline_candidates"][ColNames.FILENAME]) else (Categories.REJECTED if filename in set(AnalysisResults._preliminary_results["rejected_candidates"][ColNames.FILENAME]) else Categories.OTHER))

@@ -2,10 +2,15 @@
 This module contains constants used in the code.
 """
 
+# Packages import
 from enum import StrEnum
 
 # Wavelengths of the H₂ Lyman and Werner bands in the rest frame (in Angstroms)
 H2_LYMAN_WERNER_BANDS = [1035.0, 1130.0]
+#H2_LYMAN_WERNER_BANDS = [1060.0, 1130.0]   # Use with NUMBER_OF_BANDS = 4 to perform the analysis with only 4 bands
+
+# Number of bands to use in the cross-correlation analysis
+NUMBER_OF_BANDS : int = 6
 
 # Wavelength range for SNR estimation (in Angstroms)
 SNR_ESTIMATION_RANGE = [1400.0, 1500.0]
@@ -15,6 +20,17 @@ DESI_RESOLUTION_POWER = 2650    # Base formula: np.mean(np.array([2000., 3300.])
 
 # Light speed (in km/s)
 C_KMS =  299792.458   # Base formula, from astropy.constants module: c.to("km/s").value
+
+# Enumeration for categories names to prevent typos
+class Categories(StrEnum):
+    """
+    This class contains the categories names used in the code.
+    """
+
+    CONFIRMED   = "confirmed"
+    BORDERLINE  = "borderline"
+    REJECTED    = "rejected"
+    OTHER       = "other"
 
 # Enumeration of column names to prevent typos
 class ColNames(StrEnum):
@@ -70,9 +86,10 @@ class Modes(StrEnum):
     VALID       = "valid"
     NEW         = "new"
     PRELIMINARY = "preliminary"
-    CONFIRMED   = "confirmed"
-    REJECTED    = "rejected"
-    BORDERLINE  = "borderline"
+    CONFIRMED   = Categories.CONFIRMED
+    REJECTED    = Categories.REJECTED
+    BORDERLINE  = Categories.BORDERLINE
+    SAMPLE      = "sample"
 
 # List of analysis modes associated with preliminary analysis
 PREL_LIST = {Modes.CONFIRMED, Modes.BORDERLINE, Modes.REJECTED}

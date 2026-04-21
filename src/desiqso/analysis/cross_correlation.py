@@ -21,7 +21,7 @@ import warnings
 # Local imports
 from src.desiqso.analysis.absorption_masks import compute_h2_absorption_masks
 from src.desiqso.config import (SNR_THRESHOLD, VELOCITY_RANGE, NUM_REDSHIFT_VALUES, PLOT_CORRELATION_COEFFICIENTS, MULTIPLY_BY_CONTINUUM, PLOT_2D_DISTRIBUTION, SPECTRA_DATA_FOLDER, CROSS_CORRELATION_RESULTS_FOLDER)
-from src.desiqso.constants import (H2_LYMAN_WERNER_BANDS, C_KMS, ColNames, Modes, PREL_LIST)
+from src.desiqso.constants import (H2_LYMAN_WERNER_BANDS, NUMBER_OF_BANDS, C_KMS, ColNames, Modes, PREL_LIST)
 from src.desiqso.models.dataset import AnalysisResults
 from src.desiqso.models.profile import ProfileManager
 from src.desiqso.models.results import CrossCorrelationResult
@@ -36,13 +36,12 @@ NUMBER_OF_CORES = min(os.cpu_count(), 6)
 def run_cross_correlation_analysis(mode : str = Modes.ALL) -> None:
     """
     Function performing the cross-correlation analysis on the downloaded data respecting the selected 
-    mode ("all", "random", "preliminary", "confirmed", "borderline" or "rejected"). It loads the spectra
+    mode (see `Modes` enum). It loads the spectra
     from the local `.fits` files and performs the cross-correlation analysis on them using parallel
     processing. The results are saved in a `.txt` file, unique for each synthetic profiles. Also, 
     spectra with low SNR (< SNR_THRESHOLD) are not processed and are saved in the `low_snr.txt` file.
 
-    :param MODE: Mode of selection. Can be "all", "random", "preliminary", "confirmed", "borderline" or 
-    "rejected".
+    :param MODE: Mode of selection. See `Modes` enum.
     :type MODE: str
     :return: This function does not return anything.
     :rtype: None
@@ -132,13 +131,26 @@ def select_spectra_for_analysis(mode:str = Modes.ALL) -> list :
         # Load preliminary analysis results
         AnalysisResults.load_preliminary_results()
         # Define data groups using preliminary analysis
-        spectra_files   = set(AnalysisResults._preliminary_results[f"{mode.value}_candidates"][ColNames.FILENAME])
+        spectra_files   = set(AnalysisResults._preliminary_results[f"{mode}_candidates"][ColNames.FILENAME])
     
     elif mode == Modes.PRELIMINARY:
         # Load preliminary analysis results
         AnalysisResults.load_preliminary_results()
         # Define data groups using preliminary analysis
-        spectra_files   = set(AnalysisResults._preliminary_results["confirmed_candidates"][ColNames.FILENAME]) | set(AnalysisResults._preliminary_results["borderline_candidates"][ColNames.FILENAME]) | set(AnalysisResults._preliminary_results["rejected_candidates"][ColNames.FILENAME])
+        spectra_files = set(AnalysisResults._preliminary_results["confirmed_candidates"][ColNames.FILENAME]) | set(AnalysisResults._preliminary_results["borderline_candidates"][ColNames.FILENAME]) | set(AnalysisResults._preliminary_results["rejected_candidates"][ColNames.FILENAME])
+
+    elif mode == Modes.SAMPLE:
+        # Load preliminary analysis results
+        AnalysisResults.load_preliminary_results()
+        # Initialize the list of selected files
+        spectra_files = set()
+        # Loop on the preliminary analysis categories
+        for category in [Modes.CONFIRMED, Modes.REJECTED]:
+            # Append the files of the current category to the list of selected files
+            spectra_files = spectra_files | set(AnalysisResults._preliminary_results[f"{category}_candidates"][ColNames.FILENAME])
+        # Append a random sample of 1000 files to the list with a fixed seed for reproducibility
+        random.seed(0)
+        spectra_files = spectra_files | set(random.sample([file for file in os.listdir(SPECTRA_DATA_FOLDER) if file.endswith(".fits")], 2000))
 
     # Return the list of selected files
     return spectra_files
@@ -344,7 +356,7 @@ def cross_correlate(record : SpectrumRecord) -> CrossCorrelationResult:
                     ends = np.append(ends, len(mask))
                 
                 # If the mask doesn't have exactly 6 components, fuse neighboring components
-                if len(starts) != 6 and len(starts) > 0 and len(ends > 0):
+                if len(starts) != NUMBER_OF_BANDS and len(starts) > 0 and len(ends > 0):
                     # Ensure that the starts and ends arrays have the same length
                     n = min(len(starts), len(ends))
                     starts = starts[:n]
@@ -370,7 +382,7 @@ def cross_correlate(record : SpectrumRecord) -> CrossCorrelationResult:
                     ends   = np.array([end for  _, end in merged_segments])
 
                 # If after merging the neighboring components, the mask still doesn't have exactly 6 components, save NaN values for the core transmissions and continue to the next redshift value
-                if len(starts) != 6:
+                if len(starts) != NUMBER_OF_BANDS:
                     core_transmissions_levels.append([np.nan, np.nan, np.nan, np.nan, np.nan, np.nan])
                     continue
 

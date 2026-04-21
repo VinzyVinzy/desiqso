@@ -15,7 +15,7 @@ from tqdm import tqdm
 # Local imports
 from src.desiqso.analysis.absorption_masks import compute_h2_absorption_masks
 from src.desiqso.config import (SPECTRA_PLOTS_FOLDER, MULTIPLY_BY_CONTINUUM, settings)
-from src.desiqso.constants import (ColNames, Modes,)
+from src.desiqso.constants import (H2_LYMAN_WERNER_BANDS, ColNames, COLUMN_FILE_LABELS, Modes,)
 from src.desiqso.data.loader import load_spectrum_from_filename
 from src.desiqso.models.dataset import AnalysisResults
 from src.desiqso.models.profile import ProfileManager
@@ -61,6 +61,7 @@ def plot_spectrum(row : pd.Series, folderpath : str) -> None :
 
     # Update plot settings
     settings["ytick.right"] = True
+    settings["xtick.top"]   = False
     plt.rcParams.update(**settings)
 
     # ============
@@ -80,16 +81,7 @@ def plot_spectrum(row : pd.Series, folderpath : str) -> None :
     # ===========
 
     # Initialize figure
-    fig, ax = plt.subplots(figsize=(16,8))
-
-    # Initialize the plot title
-    title = rf"{record.name} ($z_{{QSO}}$={record.redshift:.3f})"
-    title += f"\nGrade = {grade}, Correlation parameter={correlation_param:.3f}, Core transmission={core_transmission:.3f}, SNR={record.snr:.2f}"
-    # Add the title to the plot
-    plt.title(title, loc='left')
-    # Setting the axis labels
-    plt.xlabel(r"Observed wavelength $(\AA)$")
-    plt.ylabel(r"$f_{\lambda}\ [10^{-17}\ erg\ s^{-1}\ cm^{-2}\ \AA^{-1}]$")
+    fig, ax = plt.subplots(figsize=(24,10))
 
     # Plot raw spectrum
     plt.plot(record.wavelength, record.flux, color="k", alpha=0.2, label="Unsmoothed spectrum")
@@ -100,31 +92,42 @@ def plot_spectrum(row : pd.Series, folderpath : str) -> None :
     # Overplot continuum model found in the SPARCL database
     plt.plot(record.wavelength, record.model, color="r", alpha=0.3, label="Continuum Model (DESI)")
 
-    # Overplot the constant continuum level estimated, if used for the cross-correlation analysis
-    if MULTIPLY_BY_CONTINUUM:
-        plt.axhline(y=record.continuum, color="g", linestyle="--", alpha=0.3, label=f"Constant Continuum ({record.continuum:.2f})")
-
-    # Set x-axis range to rest-frame 1000-1300 A
-    plt.xlim(1000*(1+record.redshift), 1300*(1+record.redshift))
-
-    # Set y-axis range using quantiles and an offset
-    q_low, q_high = np.percentile(record.flux, [0.3, 99.7])
-    plt.ylim(q_low-0.2, q_high+0.2)
-
     # Compute masks for H₂ absorption features and synthetic profile
     mask_data, mask_core, h2_synthetic_flux_rebinned = compute_h2_absorption_masks(record.wavelength, best_redshift, profile, record.mask)
     # If a constant continuum was applied for the cross-correlation analysis, multiply the synthetic profile by it
     continuum_level = record.continuum if MULTIPLY_BY_CONTINUUM else 1.
     # If spectrum processing was successful, overplot best-match synthetic profile
-    plt.plot(record.wavelength, continuum_level*h2_synthetic_flux_rebinned, alpha=0.5, color="b", label=rf"Best fit $H_{{2}}$ profile (z~{best_redshift:.3f})")
+    plt.plot(record.wavelength, continuum_level*h2_synthetic_flux_rebinned, alpha=0.5, color="b", label=rf"$H_{{2}}$ profile used for fitting")
     # Overplot absorption features used for the cross-correlation analysis
-    plt.scatter(record.wavelength[mask_data], continuum_level*h2_synthetic_flux_rebinned[mask_data], alpha=0.3, color="b", s=10)
+    plt.scatter(record.wavelength[mask_data], continuum_level*h2_synthetic_flux_rebinned[mask_data], alpha=0.3, color="blue", s=10)
     # Overplot absorption features used for the cross-correlation analysis
-    plt.scatter(record.wavelength[mask_core], continuum_level*h2_synthetic_flux_rebinned[mask_core], alpha=0.3, color="r", s=10)
+    plt.scatter(record.wavelength[mask_core], continuum_level*h2_synthetic_flux_rebinned[mask_core], alpha=0.3, color="red", s=10)
+    # Overplot complete synthetic profile for comparaison
+    complete_profile = profile.get_complete_profile()
+    _, _, h2_synthetic_flux_rebinned_complete = compute_h2_absorption_masks(record.wavelength, best_redshift, complete_profile, record.mask)
+    plt.plot(record.wavelength, continuum_level*h2_synthetic_flux_rebinned_complete, alpha=0.5, color="green", label=rf"Complete $H_{{2}}$ profile")
+
+    # ==================
+    # Customizing plot
+    # ==================
+
+    # Initialize the plot title
+    title = rf"{record.name} ($z_{{QSO}}$={record.redshift:.3f} and $z_{{abs}}$={best_redshift:.3f})"
+    title += f"\nGrade = {grade}, Correlation parameter={correlation_param:.3f}, Core transmission={core_transmission:.3f}, SNR={record.snr:.2f}"
+    title += f"\nCategory: {row[ColNames.CATEGORY]}"
+    # Add the title to the plot
+    plt.title(title, loc='left')
+    # Setting the axis labels
+    plt.xlabel(r"Observed wavelength $(\AA)$")
+    plt.ylabel(r"$f_{\lambda}\ [10^{-17}\ erg\ s^{-1}\ cm^{-2}\ \AA^{-1}]$")
+
+    # Set x-axis range to rest-frame 1000-1300 A
+    plt.xlim((record.wavelength[mask_data][0]-200), (record.wavelength[mask_data][-1]+150))
+    # Set y-axis range using quantiles and an offset
+    plt.ylim(min(record.flux[mask_data])-0.1, max(record.flux[mask_data])+0.1)
     
     # Displaying the information
-    label = profile.legend_label
-    ax.text(0.02, 0.07, label, transform=ax.transAxes, fontsize=10, va='top')
+    ax.text(0.02, 0.05, profile.legend_label, transform=ax.transAxes, fontsize=9, va='top')
 
     # Adding a top axis for rest-frame wavelength
     axis = plt.gca()
@@ -138,7 +141,7 @@ def plot_spectrum(row : pd.Series, folderpath : str) -> None :
     secax.set_xlabel(r"Rest-frame wavelength $(\AA)$")
     
     # Adding legend and showing plot (if requested)
-    plt.legend(loc="lower right", fontsize=10)
+    plt.legend(loc="upper right", fontsize=10)
 
     # ==================
     # Saving plot
@@ -158,10 +161,9 @@ def plot_spectra(mode : str = Modes.ALL, thresholds_dict : dict = {}) -> None:
     Function plotting multiple spectra. It loads the cross-correlation analysis results, loads the 
     spectra data from local files and plots them with the best-match synthetic profile for each 
     spectrum. Only a subset of the spectra can be plotted, depending on the selected mode.
-    Available modes are: "all", "random", "preliminary", "confirmed", "borderline", "rejected",
-    "valid" and "new" (see function `get_spectra_list(mode: str)` for more details).
+    Available modes are from the `Modes` enum (see function `get_spectra_list(mode: str)` for more details).
 
-    :param MODE: Mode of selection. Can be "all", "random", "preliminary", "confirmed", "borderline", "rejected", "valid" or "new".
+    :param MODE: Mode of selection. See the `Modes` enum.
     :type MODE: str
     """
 
@@ -181,7 +183,7 @@ def plot_spectra(mode : str = Modes.ALL, thresholds_dict : dict = {}) -> None:
         if value == (None, None):
             continue
         # Updating folderpath
-        folderpath += f"_{key}-{value[0]}-{value[1]}"
+        folderpath += f"_{COLUMN_FILE_LABELS[key]}-{value[0]}-{value[1]}"
 
     # Loop on the list of valid spectra
     for _, row in tqdm(table.iterrows(), total=len(table), desc="Plotting valid spectra", unit="spectra"):
