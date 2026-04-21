@@ -10,7 +10,7 @@ import os
 from typing import Optional
 
 # Local imports
-from src.desiqso.config import CROSS_CORRELATION_RESULTS_FOLDER, SYNTHETIC_PROFILES_FOLDER, USE_BASIC_SYNTHETIC_PROFILES
+from src.desiqso.config import (CROSS_CORRELATION_RESULTS_FOLDER, SYNTHETIC_PROFILES_FOLDER, USE_BASIC_SYNTHETIC_PROFILES,)
 from src.desiqso.constants import ColNames
 
 # Class containing the results of the cross-correlation analysis for a spectrum record
@@ -47,7 +47,7 @@ class CrossCorrelationResult:
 
     # Class method to initialize output files for the spectra analysis results
     @classmethod
-    def initialize_results(cls):
+    def initialize_results(cls, output_folder : str = CROSS_CORRELATION_RESULTS_FOLDER):
         """
         Class method to initialize the output files for the spectra analysis results.
 
@@ -61,25 +61,24 @@ class CrossCorrelationResult:
         # If output files are not initialized yet
         if cls._results is None:
             # If the results folder does not exist, create it
-            if not os.path.exists(CROSS_CORRELATION_RESULTS_FOLDER):
-                os.makedirs(CROSS_CORRELATION_RESULTS_FOLDER)
+            os.makedirs(output_folder, exist_ok=True)
 
             # Initialize the `_results` attribute
             cls._results = {}
 
             # If the USE_BASIC_SYNTHETIC_PROFILES flag is True, setting up the output files
             if USE_BASIC_SYNTHETIC_PROFILES:
-                cls._results["synth_a"] = os.path.join(CROSS_CORRELATION_RESULTS_FOLDER, "synth_a.txt")
-                cls._results["synth_b"] = os.path.join(CROSS_CORRELATION_RESULTS_FOLDER, "synth_b.txt")
+                cls._results["synth_a"] = os.path.join(output_folder, "synth_a.txt")
+                cls._results["synth_b"] = os.path.join(output_folder, "synth_b.txt")
 
             # Setting up the output file for all the other synthetic profiles
             for file in os.listdir(SYNTHETIC_PROFILES_FOLDER):
-                cls._results[file] = os.path.join(CROSS_CORRELATION_RESULTS_FOLDER, file)
+                cls._results[file] = os.path.join(output_folder, file)
             
             # Setting up the output file for low SNR spectra
-            cls._results["low_snr"] = os.path.join(CROSS_CORRELATION_RESULTS_FOLDER,"low_snr.txt")
+            cls._results["low_snr"] = os.path.join(output_folder,"low_snr.txt")
             # Setting up the output file for the failed analyzed spectra
-            cls._results["failed"] = os.path.join(CROSS_CORRELATION_RESULTS_FOLDER,"failed.txt")
+            cls._results["failed"] = os.path.join(output_folder,"failed.txt")
 
             # Initialize the `headers` dictionary
             headers = {}

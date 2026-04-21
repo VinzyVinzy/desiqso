@@ -57,6 +57,10 @@ dependencies-analysis:
 sample-statistics:
 	$(PYTHON) $(DESIQSO)/pipelines/run_sample_statistics.py
 
+# Run mock analysis command
+run-mock-analysis:
+	$(PYTHON) $(DESIQSO)/pipelines/run_mock_analysis.py
+
 # Run analysis command
 run-analysis:
 	$(PYTHON) $(DESIQSO)/pipelines/run_analysis.py

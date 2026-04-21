@@ -151,6 +151,8 @@ def select_spectra_for_analysis(mode:str = Modes.ALL) -> list :
         # Append a random sample of 1000 files to the list with a fixed seed for reproducibility
         random.seed(0)
         spectra_files = spectra_files | set(random.sample([file for file in os.listdir(SPECTRA_DATA_FOLDER) if file.endswith(".fits")], 2000))
+        # Convert the set to a list
+        spectra_files = list(spectra_files)
 
     # Return the list of selected files
     return spectra_files
@@ -171,14 +173,18 @@ def spectrum_analysis(spectrum_file : str) -> tuple[str, CrossCorrelationResult]
 
     # Try to perform the cross-correlation analysis
     try:
-        # Load the spectrum data from the current file using `astropy.io.fits`
-        with fits.open(os.path.join(SPECTRA_DATA_FOLDER, spectrum_file), memmap=False) as hdul:
-            # Convert the loaded spectrum data into a python object to easily manipulate it for the spectra analysis
-            spectrum_record = SpectrumRecord.from_fits(hdul)
-            # Using the dedicated method to perform spectrum analysis
-            results = cross_correlate(spectrum_record)
-        # Return the results of the cross-correlation analysis
-        return (results.file_name, results)
+        if type(spectrum_file) == str:
+            # Load the spectrum data from the current file using `astropy.io.fits`
+            with fits.open(os.path.join(SPECTRA_DATA_FOLDER, spectrum_file), memmap=False) as hdul:
+                # Convert the loaded spectrum data into a python object to easily manipulate it for the spectra analysis
+                spectrum_record = SpectrumRecord.from_fits(hdul)
+                # Using the dedicated method to perform spectrum analysis
+                results = cross_correlate(spectrum_record)
+            # Return the results of the cross-correlation analysis
+            return (results.file_name, results)
+        else:
+            results = cross_correlate(spectrum_file)
+            return (results.file_name, results)
     # If the cross-correlation analysis fails
     except Exception as e:
         # Inform user with an error

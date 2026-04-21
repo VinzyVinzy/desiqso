@@ -89,7 +89,7 @@ PLOT_2D_DISTRIBUTION = False
 FIGURES_FOLDER = "outputs/figures/"
 
 # Path to the folder containing the results
-RESULTS_FOLDER = "outputs/N0-20_J-0-1_4-bands_sample/"
+RESULTS_FOLDER = "outputs/N0-20_J-0-1_sample-stat_all/"
 
 # Path to the folder containing the spectra data
 PRELIMINARY_DATA_PATH = "data/raw/preliminary/"
@@ -123,3 +123,6 @@ EXPECTED_CORE_TRANSMISSIONS_PATH = "data/processed/dependency/expected_core_tran
 
 # Path to the new candidates file
 NEW_CANDIDATES_PATH = RESULTS_FOLDER + "results/new_candidates.txt"
+
+# Path to the mock spectra folder
+MOCK_ANALYSIS_FOLDER = RESULTS_FOLDER + "results/mock_analysis/"
