@@ -76,6 +76,7 @@ def plot_sample_statistics() -> None:
     ProfileManager.load_all()
 
     # Updating the matplotlib settings
+    settings["xtick.top"] = True
     plt.rcParams.update(**settings)
     # Switching off the interactive mode to avoid displaying the plots during the execution of the program
     plt.ioff()

@@ -141,7 +141,7 @@ def select_spectra_for_analysis(mode:str = Modes.ALL) -> list :
 
     elif mode == Modes.SAMPLE:
         # Load preliminary analysis results
-        AnalysisResults.load_preliminary_results()
+        AnalysisResults.load_preliminary_results(verbose=False)
         # Initialize the list of selected files
         spectra_files = set()
         # Loop on the preliminary analysis categories

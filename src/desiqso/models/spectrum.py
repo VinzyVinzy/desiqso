@@ -6,7 +6,6 @@ It allows for easier access and manipulation of the spectrum data and metadata.
 # Importing necessary libraries
 from dataclasses import dataclass
 import numpy as np
-import warnings
 
 # Local imports
 from src.desiqso.constants import H2_LYMAN_WERNER_BANDS, SNR_ESTIMATION_RANGE
@@ -138,8 +137,6 @@ class SpectrumRecord:
         # Else, compute SNR normally and proceed with the analysis
         else :
             return np.median(self.flux[region_snr]/self.err[region_snr].mean())
-
-
 
     # Property to access rapidly the file name of the spectrum
     @property

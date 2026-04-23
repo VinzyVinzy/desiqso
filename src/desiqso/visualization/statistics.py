@@ -331,7 +331,7 @@ def plot_corrcoeff_vs_coretrans_2d(z_values : np.ndarray, correlation_coefficien
     return
 
 # Function to plot statistics distribution as scatter (with contour levels) or bin plot using a list of tuples containing the names of the statistics to plot
-def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, tuple[float]], profile_name : str, mode : str = "all",) -> None:
+def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, tuple[float]], profile_name : str, mode : str = Modes.ALL, data : pd.DataFrame = None, savepath : str = None, add_label : str = None) -> None:
     """
     Main function to plot statistics distribution as scatter (with contour levels) 
     or bin plot using a list of tuples containing the names of the statistics to 
@@ -356,14 +356,16 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
     # Turn off interactive mode to prevent visual artifacts
     plt.ioff()
 
-    # Load data from the results table using the survey tool
-    data = AnalysisResults.results_survey(mode, thresholds_dict=thresholds, profile_name=profile_name,)
+    # Initialize the data to plot using the thresholds
+    if data is None:
+        # Load data from the results table using the survey tool
+        data = AnalysisResults.results_survey(mode, thresholds_dict=thresholds, profile_name=profile_name,)
 
     # Loop on the data and the associated mode
     for x_key, y_key in tqdm(plot_pairs, desc="Plotting statistics", unit="plot"):
 
         # Inform user
-        tqdm.write(f"[INFO] Plotting {x_key} vs {y_key}...\n")
+        tqdm.write(f"[INFO] Plotting {x_key} vs {y_key}...")
 
         # Setting plot type depending on the x-axis values
         PLOT_TYPE = "bin" if x_key in [ColNames.Z, ColNames.SNR, ColNames.GRADE] else "scatter"
@@ -418,8 +420,11 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
         # Adding the result table name to the title
         title += f"\nSynthetic profile used: {profile_name}"
         # Adding the mode to the title (if not all)
-        if mode != "all":
+        if mode != Modes.ALL:
             title += f"\nMode: {mode}"
+        # Adding the additional label to the title (if provided)
+        if add_label is not None:
+            title += f"\n{add_label}"
         # Adding the threshold values to the title
         for key, (min_val, max_val) in thresholds.items():
             if min_val is not None or max_val is not None:
@@ -443,31 +448,9 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
         y_low, y_high = np.percentile(y_data, [0.01, 99.99])
         x_min, x_max = min(plot_sizes[x_key][0], x_low), max(plot_sizes[x_key][1], x_high)
         y_min, y_max = min(plot_sizes[y_key][0], y_low), max(plot_sizes[y_key][1], y_high)
-
-        # Set the plot x-axis limits dynamically with mode
-        if x_key == ColNames.CORR_COEFF:
-            plt.xlim(x_min-0.03, x_max+0.03)
-        elif x_key == ColNames.CORR_PROB:
-            plt.xlim(x_min-0.7, x_max+0.7)
-        elif x_key in [ColNames.Z, ColNames.QSO_Z]:
-            plt.xlim(2.4, x_max+0.1)
-        elif x_key == ColNames.SNR:
-            plt.xlim(x_min-1, x_max+1)
-        else:
-            plt.xlim(x_min-0.05, x_max+0.05)
-
-        # Set the plot y-axis limits dynamically with mode, only for "scatter" plotting mode
-        if PLOT_TYPE == "scatter":
-            if y_key == ColNames.CORR_COEFF:
-                plt.ylim(y_min-0.05, y_max+0.05)
-            elif y_key == ColNames.CORR_PROB:
-                plt.ylim(y_min-0.7, y_max+0.7)
-            elif y_key in [ColNames.QSO_Z, ColNames.Z]:
-                plt.ylim(2.4, y_max+0.1)
-            elif y_key == ColNames.SNR:
-                plt.ylim(y_min-1, y_max+1)
-            else:
-                plt.ylim(y_min-0.05, y_max+0.05)
+        # Setting the plot limits
+        plt.xlim(x_min, x_max)
+        plt.ylim(y_min, y_max)
 
         # ============
         # Saving plot
@@ -480,7 +463,8 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
             if min_val is not None or max_val is not None:
                 plot_name += f"_{COLUMN_FILE_LABELS[key]}-{min_val if min_val is not None else 'None'}-{max_val if max_val is not None else 'None'}"
         # Generating plot path, adding the mode and profile name to the path
-        savepath = os.path.join((STATISTICS_PLOTS_FOLDER), f"{profile_name}_{mode}/")
+        if savepath is None:
+            savepath = os.path.join((STATISTICS_PLOTS_FOLDER), f"{profile_name}_{mode}/")
         # If the directory does not exist, create it
         os.makedirs(savepath, exist_ok=True)
         plt.savefig(savepath + f"{plot_name}.png", dpi=600)

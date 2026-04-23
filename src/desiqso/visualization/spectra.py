@@ -5,9 +5,8 @@ check the quality of the results.
 """
 
 # Packages import
-from astropy.convolution import convolve, Gaussian1DKernel
+from astropy.convolution import (convolve, Gaussian1DKernel,)
 import matplotlib.pyplot as plt
-import numpy as np
 import os
 import pandas as pd
 from tqdm import tqdm
@@ -15,14 +14,15 @@ from tqdm import tqdm
 # Local imports
 from src.desiqso.analysis.absorption_masks import compute_h2_absorption_masks
 from src.desiqso.config import (SPECTRA_PLOTS_FOLDER, MULTIPLY_BY_CONTINUUM, settings)
-from src.desiqso.constants import (H2_LYMAN_WERNER_BANDS, ColNames, COLUMN_FILE_LABELS, Modes,)
+from src.desiqso.constants import (ColNames, COLUMN_FILE_LABELS, Modes,)
 from src.desiqso.data.loader import load_spectrum_from_filename
 from src.desiqso.models.dataset import AnalysisResults
 from src.desiqso.models.profile import ProfileManager
+from src.desiqso.models.spectrum import SpectrumRecord
 from src.desiqso.utils.helpers import compute_grade
 
 # Function plotting a spectrum
-def plot_spectrum(row : pd.Series, folderpath : str) -> None :
+def plot_spectrum(row : pd.Series, folderpath : str, record : SpectrumRecord = None, output_folder : str  =None) -> None :
     """
     Plot the spectrum of a DESI quasar given a `SpectrumRecord` instance.
 
@@ -50,8 +50,10 @@ def plot_spectrum(row : pd.Series, folderpath : str) -> None :
     # Configuration
     # ============
 
-    # Obtaining the SpectrumRecord instance for the spectrum
-    record = load_spectrum_from_filename(row[ColNames.FILENAME])
+    # If the spectrum record is not provided, load it
+    if record is None:
+        # Obtaining the SpectrumRecord instance for the spectrum
+        record = load_spectrum_from_filename(row[ColNames.FILENAME])
     
     # Obtaining the best redshift and profile for the spectrum
     profile = ProfileManager.get(row[ColNames.PROFILE])
@@ -146,11 +148,14 @@ def plot_spectrum(row : pd.Series, folderpath : str) -> None :
     # ==================
     # Saving plot
     # ==================
-    
+
+    #
+    if output_folder is None:
+        output_folder = os.path.join(SPECTRA_PLOTS_FOLDER, f"{folderpath}/")
     # If the directory does not exist, create it
-    os.makedirs(os.path.join(SPECTRA_PLOTS_FOLDER, f"{folderpath}/"), exist_ok=True)
+    os.makedirs(output_folder, exist_ok=True)
     # Saving plot
-    plt.savefig(os.path.join(SPECTRA_PLOTS_FOLDER, f"{folderpath}/") + f"{record.filename[:-4]}_{profile.name}.png", bbox_inches='tight', dpi=400)
+    plt.savefig(output_folder + f"{record.filename[:-4]}_{profile.name}.png", bbox_inches='tight', dpi=400)
     
     # Closing plot
     plt.close(fig)
