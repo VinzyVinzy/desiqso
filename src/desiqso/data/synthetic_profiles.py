@@ -25,7 +25,7 @@ from src.desiqso.constants import C_KMS
 
 
 # Function to synthetize an H₂ profile from a list of bands and a few parameters
-def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_exc : float = 100., Jmax : int = 1, b_param : float = 5., pixel_size : float = 5., save : bool = False, verbose : bool = True) -> tuple[np.ndarray, np.ndarray]:
+def generate_h2_profile(resolution_power : float = 2000., Ntot : float = 1e20, T_exc : list[float] = [100., 100.,100.,100.,100.,100.,100.,], Jmax : int = 1, b_param : float = 5., pixel_size : float = 5., save : bool = False, verbose : bool = True) -> tuple[np.ndarray, np.ndarray]:
     """
     This function generates a synthetic H₂ profile from a list of bands and a few parameters. The
     bands currently supported are: BX(0-0), BX(1-0), BX(2-0), BX(3-0), BX(4-0), BX(5-0)), BX(6-0), 
@@ -34,10 +34,10 @@ def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_e
     :param resolution_power: The resolution power of the synthetic profile, corresponding to the 
     instrument. Default is 2000.
     :type resolution_power: float, optional
-    :param N0: The column density of the synthetic profile. Default is 1e20.
-    :type N0: float, optional
-    :param T_exc: The excitation temperature of the ground state of the synthetic profile. Default is 100.
-    :type T_exc: float, optional
+    :param Ntot: The total column density of H₂ in the synthetic profile. Default is 1e20.
+    :type Ntot: float, optional
+    :param T_exc: The excitation temperatures of the the rotational states of the synthetic profile. Default is 100 for every level.
+    :type T_exc: list[float], optional
     :param Jmax: The maximum rotational level of the synthetic profile. Default is 1.
     :type Jmax: int, optional
     :param b_param: The velocity width of the Voigt profile (Doppler parameter). Default is 5.
@@ -63,7 +63,7 @@ def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_e
         print(f"[INFO] - 6 bands (CX(0-0), CX(1-0), CX(2-0), CX(3-0), CX(4-0), CX(5-0))")
         print(f"[INFO] - Resolution power : {resolution_power}")
         print(f"[INFO] - Constant pixel size in km/s : {pixel_size} km/s")
-        print(f"[INFO] - Excitation temperature of ground state : {T_exc} K")
+        print(f"[INFO] - Excitation temperature of ground state : {T_exc[0]} K")
         print(f"[INFO] - Velocity width of the Voigt profile (Doppler parameter) : {b_param} km/s\n")
 
     # Update and apply matplotlib settings
@@ -77,7 +77,7 @@ def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_e
     # ================
 
     # Number of rotational levels to add to the synthetic profile
-    NUM_ROTATIONAL_LEVELS = Jmax + 1 # (2 => J=0,1 ;  4 => J=0,1,2,3)
+    NUM_ROTATIONAL_LEVELS = min(Jmax + 1, 7) # (2 => J=0,1 ;  4 => J=0,1,2,3)
 
     # List of redshifts for each rotational level (defaults to 0, but can be modified if needed)
     redshift = [0. for _ in range(NUM_ROTATIONAL_LEVELS)]
@@ -94,9 +94,6 @@ def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_e
     # Compute column density using a the J=0 rotational level column density and an excitation temperature
     # ================
 
-    # Initialize an empty list for column densities
-    column_density : list[float] = [N0]
-
     # Function to compute statistical weight for H₂ rotational level
     def g_J(J : float) -> float:
         # If J is even, return 2J+1
@@ -105,12 +102,21 @@ def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_e
         # If J is odd, return 3(2J+1)
         else:
             return 3 * (2. * J + 1.)
+        
+    # Initialize partition function Z
+    Z=0.
+    # Loop on rotational levels
+    for J in range(NUM_ROTATIONAL_LEVELS):
+        # Compute partition function Z
+        Z += g_J(J) * math.exp(-(energy_of_level("H2",J)-energy_of_level("H2",0))/T_exc[J])
+        
+    # Initialize an empty list for column densities
+    column_density : list[float] = []
 
-    # Loop on rotational levels above the ground state
-    for J in range(1, NUM_ROTATIONAL_LEVELS):
-
+    # Loop on rotational levels
+    for J in range(NUM_ROTATIONAL_LEVELS):
         # Compute column density of rotational level J
-        column_density.append(N0 * (g_J(J)/g_J(0)) * math.exp(-(energy_of_level("H2",J)-energy_of_level("H2",0))/T_exc))
+        column_density.append(Ntot * (g_J(J) * math.exp(-(energy_of_level("H2",J)-energy_of_level("H2",0))/T_exc[J])) / Z)
 
     # ================
     # Lines selection
@@ -208,7 +214,7 @@ def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_e
     plt.ylabel("Transmission")
 
     # Plot title
-    plt.title(f"Synthetic "+r"H$_2$"+f" profile with: R={resolution_power}, log(N0)={math.log10(N0):.1f} "+r"cm$^{-2}$"+f" and T={T_exc} K")
+    plt.title(f"Synthetic "+r"H$_2$"+rf" profile with: R={resolution_power}, log(N$_{{tot}}$)={math.log10(Ntot):.1f} "+r"cm$^{-2}$"+f" and T={T_exc[0]} K")
 
     # Displaying the column density of each rotational level
     column_densities_str = ""
@@ -229,12 +235,12 @@ def generate_h2_profile(resolution_power : float = 2000., N0 : float = 1e20, T_e
     # Saving the synthetic H₂ profile, if required
     if save:
         # Generating the synthetic H₂ profile name
-        plot_name = f"h2_profile_res-{resolution_power:.1f}_n0-{math.log10(N0):.1f}_J-{"-".join([str(J) for J in range(NUM_ROTATIONAL_LEVELS)])}_Texc-{T_exc}_b-{b_param}_pix-{pixel_size}.png"
+        plot_name = f"h2_profile_res-{resolution_power:.1f}_ntot-{math.log10(Ntot):.1f}_J-{"-".join([str(J) for J in range(NUM_ROTATIONAL_LEVELS)])}_Texc-{T_exc[0]}_b-{b_param}_pix-{pixel_size}.png"
         # Creating the output folder
         output_path = f"{FIGURES_FOLDER}synthetic_profiles/{plot_name}"
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         # Saving the figure in the right folder
-        plt.savefig(output_path, dpi=300)
+        plt.savefig(output_path, dpi=400)
 
         # Informing user
         print(f"[INFO] Synthetic H2 profile successfully saved in {SYNTHETIC_PROFILES_FOLDER}plots/{plot_name}\n")

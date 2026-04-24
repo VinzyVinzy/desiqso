@@ -105,9 +105,6 @@ def compute_h2_absorption_masks(wavelength : np.ndarray, redshift : float, profi
     selected_peaks.append(best)
     # Convert the list to an array and only keep the deepest absorption features
     selected_peaks = np.array(selected_peaks)[:NUMBER_OF_BANDS]
-    # If less than 6 peaks are found, print a warning message for degu purposes
-    if len(selected_peaks) != NUMBER_OF_BANDS:
-        print(f"[DEBUG] Only {len(selected_peaks)} peaks found for redshift {redshift}")
         
     # Setting the width of the absorption feature to 10 pixels
     line_width = 20

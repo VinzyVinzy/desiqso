@@ -6,6 +6,7 @@ It also plots some of the statistics and spectra from the mock spectra analysis 
 # Packages import
 from collections import defaultdict
 from concurrent.futures import (ProcessPoolExecutor, as_completed,)
+from math import log10
 import numpy as np
 import os
 import pandas as pd
@@ -15,7 +16,7 @@ from tqdm import tqdm
 # Local imports
 from src.desiqso.analysis.absorption_masks import compute_h2_absorption_masks
 from src.desiqso.analysis.cross_correlation import (NUMBER_OF_CORES, select_spectra_for_analysis, spectrum_analysis, init_worker,)
-from src.desiqso.config import MOCK_ANALYSIS_FOLDER
+from src.desiqso.config import (MOCK_ANALYSIS_FOLDER, CORRELATION_PARAM_THRESHOLD,)
 from src.desiqso.constants import (ColNames, Modes, Categories,)
 from src.desiqso.data.loader import load_spectrum_from_filename
 from src.desiqso.models.dataset import (AnalysisResults, which_data_group,)
@@ -27,16 +28,19 @@ from src.desiqso.visualization.spectra import plot_spectrum
 from src.desiqso.visualization.statistics import plot_distribution
 
 # Function to perform the cross-correlation analysis on a sample of mock spectra
-def mock_analysis() -> dict[str, SpectrumRecord]:
+def mock_analysis(profile_ntot : float = 20., use_same_profile : bool = True) -> dict[str, SpectrumRecord]:
     """
     This function performs the cross-correlation analysis on a sample of mock spectra.
     The mock spectra are generated based on high-SNR (> 15) spectra with low-chance of H₂ 
     multiplied by a complete H₂ profile at the redshift of the quasar with added noise.
     If this analysis is already performed, the function loads the results from the output folder.
 
-    :return: A dictionary of the mock spectra with the key being the filename and the value being 
+    :param profile_ntot: The total column density value of the profile to use for the mock spectra. Default is 20.
+    :type profile_ntot: float, optional
+    :param use_same_profile: Whether to use the same profile for all the mock spectra. Default is True.
+    :type use_same_profile: bool, optional
+    :return dict[str, SpectrumRecord]: A dictionary of the mock spectra with the key being the filename and the value being 
     the associated `SpectrumRecord` instance.
-    :rtype: dict[str, SpectrumRecord]
     """
 
     # ====================
@@ -86,10 +90,21 @@ def mock_analysis() -> dict[str, SpectrumRecord]:
     # Adding the other spectra to the sample
     sample_spectra.extend(table[~table[ColNames.FILENAME].isin(filenames)][ColNames.FILENAME].tolist())
 
-    # Loading synthetic H₂ profiles and retrieving the first one
+    # Loading synthetic H₂ profiles
     ProfileManager.load_all(verbose=False)
-    profile = ProfileManager.all_profiles()[0]
+    # If there is more than one profile
+    if len(ProfileManager.all_profiles()) > 1:
+        # Retrieving the first profile with the selected Ntot
+        profile = [profile for profile in ProfileManager.all_profiles() if log10(profile.Ntot) == profile_ntot][0]
+    # If there is only one profile
+    else :
+        profile = ProfileManager.all_profiles()[0]
+    # Retrieving the complete version of the synthetic profile
     full_profile = profile.get_complete_profile()
+    
+    # If the user does not want to use the same profile for the analysis, removing the profile from the manager
+    if not use_same_profile and len(ProfileManager.all_profiles()) > 1:
+        ProfileManager._profiles.pop(profile.name)
 
     # ====================
     # Creating and saving the mock spectra
@@ -109,8 +124,10 @@ def mock_analysis() -> dict[str, SpectrumRecord]:
         mask_data, _, flux_rebinned = compute_h2_absorption_masks(record.wavelength, record.redshift, full_profile, record.mask)
         # Find the indices of the data points that are not masked
         indices = np.where(mask_data)[0]
+        # Creating the slice for the synthetic profile
+        indices_slice = slice(indices[0]-10, indices[-1]+10)
         # Adding the synthetic profile to the original spectrum
-        record.flux[indices[0]:indices[-1]+1] *= flux_rebinned[indices[0]:indices[-1]+1]
+        record.flux[indices_slice] *= flux_rebinned[indices_slice]
         # Selecting a random SNR
         snr = float(np.random.randint(3, 10))
         # Computing the noise
@@ -177,12 +194,14 @@ def mock_analysis() -> dict[str, SpectrumRecord]:
     return mock_spectra
 
 # Function to plot some of the statistics and spectra from the mock spectra analysis results
-def mock_spectra_statistics_plotting(mock_spectra : dict[str, SpectrumRecord]) -> None :
+def mock_spectra_statistics_plotting(mock_spectra : dict[str, SpectrumRecord], profile_ntot : float = 20.) -> None :
     """
     This function plots some of the statistics and spectra from the mock spectra analysis results.
 
     :param mock_spectra: Dictionary containing the filenames and corresponding `SpectrumRecord` of the mock spectra.
     :type mock_spectra: dict[str, SpectrumRecord]
+    :param profile_ntot: Total column density of the synthetic profile used for creating the mock spectra.
+    :type profile_ntot: float
     :return: This function does not return anything.
     :rtype: None
     """
@@ -198,6 +217,13 @@ def mock_spectra_statistics_plotting(mock_spectra : dict[str, SpectrumRecord]) -
     AnalysisResults.load_preliminary_results(verbose=False)
     # Loading all the H₂ synthetic profiles
     ProfileManager.load_all(verbose=False)
+    # If there is more than one profile
+    if len(ProfileManager.all_profiles()) > 1:
+        # Retrieving the first profile with the selected Ntot
+        profile = [profile for profile in ProfileManager.all_profiles() if log10(profile.Ntot) != profile_ntot][0]
+    # If there is only one profile
+    else :
+        profile = ProfileManager.all_profiles()[0]
 
     # Reading the results of the analysis
     result_file = [file for file in os.listdir(MOCK_ANALYSIS_FOLDER) if file.endswith(".npy")][0]
@@ -233,15 +259,18 @@ def mock_spectra_statistics_plotting(mock_spectra : dict[str, SpectrumRecord]) -
         (ColNames.SNR, ColNames.CORR_PARAM),
         (ColNames.CORR_PARAM, ColNames.CORE_TRANS),
         (ColNames.CORR_COEFF, ColNames.CORE_TRANS),
+        (ColNames.Z, ColNames.CORR_PARAM),
     ]
 
     # Table containing the results for the spectra in which H2 was added
     mock_results = results.copy()
     mock_results = mock_results[mock_results[ColNames.FILENAME].isin(mock_spectra.keys())]
+    # 
+    mock_results = mock_results[mock_results[ColNames.PROFILE] == profile.name]
     # Table containing the results for the spectra in which H2 was added and the cross-correlation analysis succeeded
-    mock_results_valid = mock_results[mock_results[ColNames.IS_VALID] == 1].copy()
+    mock_results_valid = mock_results[mock_results[ColNames.CORR_PARAM] >= CORRELATION_PARAM_THRESHOLD].copy()
     # Table containing the results for the spectra in which H2 was added and the cross-correlation analysis succeeded
-    mock_results_not_valid = mock_results[mock_results[ColNames.IS_VALID] == 0].copy()
+    mock_results_not_valid = mock_results[mock_results[ColNames.CORR_PARAM] < CORRELATION_PARAM_THRESHOLD].copy()
 
     # Defining the data, savepath and label to plot
     plot_params = [
@@ -254,7 +283,7 @@ def mock_spectra_statistics_plotting(mock_spectra : dict[str, SpectrumRecord]) -
     # Looping over the plot parameters
     for results, savepath, label in plot_params:
         # If the results are empty or less than 10, continue
-        if len(results) < 10:
+        if len(results) < 5:
             continue
         # Calling the `plot_distribution` function to plot the statistics
         plot_distribution(plot_pairs=plot_pairs, thresholds={}, profile_name="", mode=Modes.ALL, data=results, savepath=savepath, add_label=label)
@@ -264,14 +293,14 @@ def mock_spectra_statistics_plotting(mock_spectra : dict[str, SpectrumRecord]) -
     # ================
 
     # Selecting 50 random valid mock spectra with a fixed seed for reproductibility
-    table = mock_results_valid.sample(n=50, random_state=42)
+    table = mock_results_valid.sample(n=min(20, len(mock_results_valid)), random_state=42)
     # Loop on the list of valid spectra
     for _, row in tqdm(table.iterrows(), total=len(table), desc="Plotting valid mock spectra", unit="spectra"):
         # Plotting the spectrum using the dedicated function, without showing the plot
         plot_spectrum(row=row, folderpath="", record=mock_spectra[row[ColNames.FILENAME]], output_folder=f"{MOCK_ANALYSIS_FOLDER}figures/spectra_mock_valid/")
     
     # Selecting 50 random not valid mock spectra with a fixed seed for reproductibility
-    table = mock_results_not_valid.sample(n=min(50, len(mock_results_not_valid)), random_state=42)
+    table = mock_results_not_valid.sample(n=min(20, len(mock_results_not_valid)), random_state=42)
     # Loop on the list of valid spectra
     for _, row in tqdm(table.iterrows(), total=len(table), desc="Plotting not valid mock spectra", unit="spectra"):
         # Plotting the spectrum using the dedicated function, without showing the plot

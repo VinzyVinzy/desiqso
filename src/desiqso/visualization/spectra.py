@@ -123,9 +123,9 @@ def plot_spectrum(row : pd.Series, folderpath : str, record : SpectrumRecord = N
     plt.xlabel(r"Observed wavelength $(\AA)$")
     plt.ylabel(r"$f_{\lambda}\ [10^{-17}\ erg\ s^{-1}\ cm^{-2}\ \AA^{-1}]$")
 
-    # Set x-axis range to rest-frame 1000-1300 A
+    # Set x-axis range
     plt.xlim((record.wavelength[mask_data][0]-200), (record.wavelength[mask_data][-1]+150))
-    # Set y-axis range using quantiles and an offset
+    # Set y-axis range using
     plt.ylim(min(record.flux[mask_data])-0.1, max(record.flux[mask_data])+0.1)
     
     # Displaying the information

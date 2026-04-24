@@ -40,7 +40,7 @@ def get_profile_characteristics(filename : str) -> tuple[str] :
     Retrieves the characteristics of a synthetic profile from its filename.
 
     The filename is expected to follow the naming convention :
-    "h2_profile_res-V_n0-W_J-0-1..._Texc-X_b-Y_pix-Z.npy"
+    "h2_profile_res-V_ntot-W_J-0-1..._Texc-X_b-Y_pix-Z.npy"
 
     :param filename: The filename of the synthetic profile.
     :return tuple[str]: A tuple containing the characteristics of the synthetic profile.
@@ -58,12 +58,12 @@ def get_profile_characteristics(filename : str) -> tuple[str] :
         # Retrieve the characteristics
         T_exc = name_split[5][5:]
         J = name_split[4][2:]
-        N_0 = name_split[3][3:]
+        Ntot = name_split[3][5:]
         res = name_split[2][4:]
         b_param = name_split[6][2:]
         pix_size = name_split[7][4:-4]
         # Return the characteristics
-        return T_exc, J, N_0, res, b_param, pix_size
+        return T_exc, J, Ntot, res, b_param, pix_size
 
 # Utility function to parse a cell from a `pd.DataFrame`
 def parse_cell(x):
@@ -159,3 +159,19 @@ def compute_column_weights(table : pd.DataFrame, column : str) -> np.ndarray:
 
     # Return the computed weights
     return np.ones_like(table[column]) / len(table)
+
+# Utility function to compute the excitation temperature for each rotational level from the ground level
+def compute_excitation_temperature(T_exc0 : float) -> list[float]:
+    """
+    This function computes the excitation temperature for each rotational level from the ground level.
+
+    :param T_exc: The excitation temperature of the ground level.
+    :type T_exc: float
+    :return list[float]: The list of excitation temperatures for all the rotational levels.
+    """
+
+    # List of excitation temperatures
+    Texc = [T_exc0, T_exc0, 240., 240., 240., 240., 240.]
+
+    # Return the excitation temperature for the rotational level
+    return Texc

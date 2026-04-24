@@ -11,7 +11,7 @@ from src.desiqso.constants import Modes
 if __name__ == "__main__":
 
     # Calling the function to perform the cross-correlation analysis with the selected mode
-    run_cross_correlation_analysis(mode=Modes.ALL)
+    run_cross_correlation_analysis(mode=Modes.SAMPLE)
 
     # Finding and saving the new candidates found
     find_new_candidates()

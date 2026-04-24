@@ -70,7 +70,7 @@ NUM_REDSHIFT_VALUES = 100
 ABSORPTION_FEATURE_THRESHOLD = 0.95
 
 # Threshold for the cross-correlation fonction to consider a core H₂ absorption feature in the synthetic profile
-CORE_ABSORPTION_FEATURE_THRESHOLD = 0.2
+CORE_ABSORPTION_FEATURE_THRESHOLD = 0.15
 
 # Flag to multiply the synthetic profiles by the estimated continuum level of the spectrum for the cross-correlation analysis
 MULTIPLY_BY_CONTINUUM = True
@@ -89,7 +89,7 @@ PLOT_2D_DISTRIBUTION = False
 FIGURES_FOLDER = "outputs/figures/"
 
 # Path to the folder containing the results
-RESULTS_FOLDER = "outputs/N0-20_J-0-1_sample-stat_all/"
+RESULTS_FOLDER = "outputs/N0-20_J-0-1_main-run_all/"
 
 # Path to the folder containing the spectra data
 PRELIMINARY_DATA_PATH = "data/raw/preliminary/"
