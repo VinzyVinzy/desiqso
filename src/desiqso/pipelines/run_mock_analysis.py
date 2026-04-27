@@ -3,13 +3,18 @@ This module contains the entry point for the `run-mock-analysis` command.
 """
 
 # Local imports
-from src.desiqso.analysis.mocks_spectra import (mock_analysis, mock_spectra_statistics_plotting,)
+from src.desiqso.analysis.mocks_spectra import mock_analysis
+from src.desiqso.models.profile import ProfileManager
 
 # Entry point for the `run-mock-analysis` command
 if __name__ == "__main__":
 
-    # Calling the function to retrieve and save the list of spectra files with high SNR
-    mock_spectra = mock_analysis(profile_ntot=19., use_same_profile=False)
+    # Load H2 profiles, if not already done
+    ProfileManager.load_all()
 
-    # Calling the function to plot the statistics of the mock spectra used for the analysis
-    mock_spectra_statistics_plotting(mock_spectra = mock_spectra, profile_ntot=19.)
+    # Defining the profiles to use for the mock spectra analysis
+    profile_to_add = ProfileManager.get(name="h2_profile_res-2650.0_ntot-19.5_J-0-1-2-3-4-5_Texc-75.0_b-5.0_pix-5.0")
+    profile_to_fit = ProfileManager.get(name="h2_profile_res-2650.0_ntot-20.0_J-0-1_Texc-75.0_b-3.0_pix-5.0")
+
+    # Calling the function to perform the complete mock analysis
+    mock_analysis(profile_to_add, profile_to_fit)

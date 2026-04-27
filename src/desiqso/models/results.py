@@ -12,6 +12,7 @@ from typing import Optional
 # Local imports
 from src.desiqso.config import (CROSS_CORRELATION_RESULTS_FOLDER, SYNTHETIC_PROFILES_FOLDER, USE_BASIC_SYNTHETIC_PROFILES,)
 from src.desiqso.constants import ColNames
+from src.desiqso.models.profile import Profile
 
 # Class containing the results of the cross-correlation analysis for a spectrum record
 @dataclass
@@ -47,7 +48,7 @@ class CrossCorrelationResult:
 
     # Class method to initialize output files for the spectra analysis results
     @classmethod
-    def initialize_results(cls, output_folder : str = CROSS_CORRELATION_RESULTS_FOLDER):
+    def initialize_results(cls, output_folder : str = CROSS_CORRELATION_RESULTS_FOLDER, profiles_list = list[Profile]):
         """
         Class method to initialize the output files for the spectra analysis results.
 
@@ -56,6 +57,11 @@ class CrossCorrelationResult:
         for the cross-correlation analysis results of the spectra, including the output files for the 
         synthetic profiles and the low SNR spectra. It also defines the headers for the output files 
         and writes them to the files.
+
+        :param output_folder: Folder to save the results.
+        :type output_folder: str
+        :param profiles_list: List of synthetic profiles used to perform the cross-correlation analysis.
+        :type profiles_list: list[Profile]
         """
         
         # If output files are not initialized yet
@@ -72,8 +78,8 @@ class CrossCorrelationResult:
                 cls._results["synth_b"] = os.path.join(output_folder, "synth_b.txt")
 
             # Setting up the output file for all the other synthetic profiles
-            for file in os.listdir(SYNTHETIC_PROFILES_FOLDER):
-                cls._results[file] = os.path.join(output_folder, file)
+            for profile in profiles_list:
+                cls._results[profile.name] = os.path.join(output_folder, f"{profile.name}.npy")
             
             # Setting up the output file for low SNR spectra
             cls._results["low_snr"] = os.path.join(output_folder,"low_snr.txt")

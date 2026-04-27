@@ -123,6 +123,3 @@ EXPECTED_CORE_TRANSMISSIONS_PATH = "data/processed/dependency/expected_core_tran
 
 # Path to the new candidates file
 NEW_CANDIDATES_PATH = RESULTS_FOLDER + "results/new_candidates.txt"
-
-# Path to the mock spectra folder
-MOCK_ANALYSIS_FOLDER = RESULTS_FOLDER + "results/mock_analysis/"

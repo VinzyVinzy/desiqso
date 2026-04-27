@@ -35,9 +35,9 @@ from src.desiqso.utils.helpers import normalize
 # Global variable to store the sizes of the plots
 plot_sizes = {
     ColNames.CORR_PROB  : [0, 0], 
-    ColNames.CORR_COEFF : [-0.02, 1.02], 
-    ColNames.CORR_PARAM : [-0.02, 1.02], 
-    ColNames.CORE_TRANS : [-0.55, 0.75],
+    ColNames.CORR_COEFF : [-0.05, 1.05], 
+    ColNames.CORR_PARAM : [-0.05, 1.05], 
+    ColNames.CORE_TRANS : [-0.55, 0.85],
     ColNames.Z          : [2.5, 6.0], 
     ColNames.QSO_Z      : [2.5, 6.0], 
     ColNames.SNR        : [0, 50], 
@@ -347,6 +347,12 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
     :type result_table: pd.DataFrame
     :param mode: Mode of the analysis. Can be "all" or "random".
     :type mode: str
+    :param data: Data to plot. If None, the data is loaded from the results table.
+    :type data: pd.DataFrame
+    :param savepath: Path to save the plot. If None, the plot is saved in a default folder.
+    :type savepath: str
+    :param add_label: Label to add to the plot. If None, the label is not added.
+    :type add_label: str
     """
 
     # =========
@@ -443,14 +449,9 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
             # Adding the legend to the plot
             plt.legend(handles=marker_legend, title="Groups", loc="upper right")
 
-        # Compute the plot limits using percentiles to be less affected by outliers
-        x_low, x_high = np.percentile(x_data, [0.01, 99.99])
-        y_low, y_high = np.percentile(y_data, [0.01, 99.99])
-        x_min, x_max = min(plot_sizes[x_key][0], x_low), max(plot_sizes[x_key][1], x_high)
-        y_min, y_max = min(plot_sizes[y_key][0], y_low), max(plot_sizes[y_key][1], y_high)
         # Setting the plot limits
-        plt.xlim(x_min, x_max)
-        plt.ylim(y_min, y_max)
+        plt.xlim(plot_sizes[x_key][0], plot_sizes[x_key][1])
+        plt.ylim(plot_sizes[y_key][0], plot_sizes[y_key][1])
 
         # ============
         # Saving plot

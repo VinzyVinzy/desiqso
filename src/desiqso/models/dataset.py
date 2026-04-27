@@ -43,14 +43,17 @@ class AnalysisResults:
 
     # Class method to load the analysis results from local files
     @classmethod
-    def load_results(cls, verbose : bool = True) -> None:
+    def load_results(cls, folder : str = CROSS_CORRELATION_RESULTS_FOLDER, verbose : bool = True) -> None:
         """
         This class method loads the cross-correlation analysis results from local files only once to save extra 
         time and guarantee easier access. Also loads the results table associated with the preliminary analysis and
         the low-SNR table. If available, it also loads the new candidates list and the expected core transmissions
-        for the synthetic profiles.
-        
-        Exits the program if there are no results to load.
+        for the synthetic profiles. Returns to the main function if there are no results to load.
+
+        :param folder: The folder containing the results of the cross-correlation analysis.
+        :type folder: str
+        :param verbose: Whether to print information about the loading process.
+        :type verbose: bool
         """
 
         # If the results of the cross-correlation analysis are already loaded
@@ -75,12 +78,12 @@ class AnalysisResults:
             print("[INFO] Loading cross-correlation analysis results...")
 
         # If the results of the cross-correlation analysis is available
-        if os.path.exists(CROSS_CORRELATION_RESULTS_FOLDER) :
+        if os.path.exists(folder) :
 
             # Loop on the results tables of the cross-correlation analysis
-            for result_table in [file for file in os.listdir(CROSS_CORRELATION_RESULTS_FOLDER) if file.endswith(".npy") or file.endswith(".txt")]:
+            for result_table in [file for file in os.listdir(folder) if file.endswith(".npy") or file.endswith(".txt")]:
                 # Loading analysis results as DataFrames for faster access
-                results = pd.read_csv(CROSS_CORRELATION_RESULTS_FOLDER+result_table, sep="\t")
+                results = pd.read_csv(folder+result_table, sep="\t")
                 # Cleaning the column names
                 results.columns = results.columns.str.replace("# ", "", regex=False)
                 # Parsing the cells to obtain the right data type for the column "Best fit J core transmission"
@@ -141,6 +144,22 @@ class AnalysisResults:
             "`make run` command to execute cross-correlation analysis before plotting the spectra.")
             # Exit the programm
             os._exit(1)
+
+    # Class method to forcefully reload the results of the cross-correlation analysis from another folder as the default one
+    @classmethod
+    def reload(cls, folder : str, verbose : bool = True) -> None:
+        """
+        This class method reloads the results of the cross-correlation analysis from another folder as the default one.
+
+        :param folder: The folder containing the results of the cross-correlation analysis.
+        :type folder: str
+        :param verbose: If True, prints information about the cross-correlation analysis results.
+        :type verbose: bool
+        """
+        # Reseting the class attribute
+        cls._results = None
+        # Loading the results of the cross-correlation analysis from the new folder
+        cls.load_results(folder, verbose=verbose)
 
     # Class method to load the results of the preliminary analysis
     @classmethod

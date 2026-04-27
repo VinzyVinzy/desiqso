@@ -1,6 +1,6 @@
 [project]
 name = "desiqso"
-version = "0.1.9"
+version = "0.1.10"
 description = ""
 authors = [
     {name = "Vincent Lefloch",email = "vincent.lefloch.vl@gmail.com"}

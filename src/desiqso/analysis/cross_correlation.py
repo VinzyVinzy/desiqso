@@ -23,7 +23,7 @@ from src.desiqso.analysis.absorption_masks import compute_h2_absorption_masks
 from src.desiqso.config import (SNR_THRESHOLD, VELOCITY_RANGE, NUM_REDSHIFT_VALUES, PLOT_CORRELATION_COEFFICIENTS, MULTIPLY_BY_CONTINUUM, PLOT_2D_DISTRIBUTION, SPECTRA_DATA_FOLDER, CROSS_CORRELATION_RESULTS_FOLDER)
 from src.desiqso.constants import (H2_LYMAN_WERNER_BANDS, NUMBER_OF_BANDS, C_KMS, ColNames, Modes, PREL_LIST)
 from src.desiqso.models.dataset import AnalysisResults
-from src.desiqso.models.profile import ProfileManager
+from src.desiqso.models.profile import (ProfileManager, Profile,)
 from src.desiqso.models.results import CrossCorrelationResult
 from src.desiqso.models.spectrum import SpectrumRecord
 from src.desiqso.visualization.statistics import (plot_correlation_vs_redshift, plot_corrcoeff_vs_coretrans_2d)
@@ -33,7 +33,7 @@ from src.desiqso.visualization.statistics import (plot_correlation_vs_redshift, 
 NUMBER_OF_CORES = min(os.cpu_count(), 6)
 
 # Function to run the cross-correlation analysis from the pipeline program
-def run_cross_correlation_analysis(mode : str = Modes.ALL) -> None:
+def run_cross_correlation_analysis(mode : str = Modes.ALL, spectra_files : list[str] = [], profiles_to_fit : list[Profile] = [], output_folder : str = CROSS_CORRELATION_RESULTS_FOLDER) -> None:
     """
     Function performing the cross-correlation analysis on the downloaded data respecting the selected 
     mode (see `Modes` enum). It loads the spectra
@@ -43,8 +43,13 @@ def run_cross_correlation_analysis(mode : str = Modes.ALL) -> None:
 
     :param MODE: Mode of selection. See `Modes` enum.
     :type MODE: str
-    :return: This function does not return anything.
-    :rtype: None
+    :param spectra_files: List of spectra files to process.
+    :type spectra_files: list[str]
+    :param profiles_to_fit: List of synthetic profiles to fit.
+    :type profiles_to_fit: list[Profile]
+    :param output_folder: Folder to save the results.
+    :type output_folder: str
+    :return None: This function does not return anything.
     """
 
     # ================
@@ -53,12 +58,20 @@ def run_cross_correlation_analysis(mode : str = Modes.ALL) -> None:
 
     # Creation of the results accumulator for the spectra analysis, to store the results of the cross-correlation analysis for all the loaded spectra
     results_accumulator = defaultdict(list)
-    # Inform user
-    print("\n[INFO] Loading spectra from local files...")
-    # Retrieve the list of spectra files using the selected mode
-    spectra_files = select_spectra_for_analysis(mode=mode)
-    # Inform user
-    print(f"[INFO] {len(spectra_files)} spectra loaded successfully!")
+    # If the list of spectra is empty
+    if len(spectra_files) == 0:
+        # Inform user
+        print("\n[INFO] Loading spectra from local files...")
+        # Retrieve the list of spectra files using the selected mode
+        spectra_files = select_spectra_for_analysis(mode=mode)
+        # Inform user
+        print(f"[INFO] {len(spectra_files)} spectra loaded successfully!")
+    # If the list of profiles to fit is empty
+    if len(profiles_to_fit) == 0:
+        # Load synthetic profiles
+        ProfileManager.load_all()
+        # Perform the analysis on all the available synthetic profiles
+        profiles_to_fit = ProfileManager.all_profiles()
 
     # ================
     # Spectra loading and parallel processing
@@ -70,7 +83,7 @@ def run_cross_correlation_analysis(mode : str = Modes.ALL) -> None:
     # Creation of Process Pool Executor for parallel processing
     with ProcessPoolExecutor(max_workers=min(os.cpu_count(), NUMBER_OF_CORES), initializer=init_worker) as executor:
         # Parallel processing of the cross-correlation analysis using the Process Pool Executor
-        futures = [executor.submit(spectrum_analysis, spectrum_file) for spectrum_file in spectra_files]
+        futures = [executor.submit(spectrum_analysis, spectrum_file, profiles_to_fit) for spectrum_file in spectra_files]
         # Loop on the futures to retrieve the results of the cross-correlation analysis
         for future in tqdm(as_completed(futures), total=len(futures), desc="Processing spectra", unit="file"):
             # Retrieve the results of the cross-correlation analysis
@@ -94,12 +107,12 @@ def run_cross_correlation_analysis(mode : str = Modes.ALL) -> None:
     print("\n[INFO] Saving spectra analysis results...")
     # Initialisation of results files
     if CrossCorrelationResult._results is None:
-        CrossCorrelationResult.initialize_results()
+        CrossCorrelationResult.initialize_results(output_folder=output_folder, profiles_list=profiles_to_fit)
     # Save the results of the spectra analysis in the corresponding local files in .txt format
     for _, results in tqdm(results_accumulator.items(), desc="Saving results", unit="file"):
         results.save_results()
     # Inform user
-    print(f"\n[INFO] Spectra analysis results saved successfully in folder `{CROSS_CORRELATION_RESULTS_FOLDER}`!\n")
+    print(f"\n[INFO] Spectra analysis results saved successfully in folder `{output_folder}`!\n")
 
 # Function to select only a small part of the downloaded spectra to perform the cross-correlation analysis
 def select_spectra_for_analysis(mode:str = Modes.ALL) -> list :
@@ -158,7 +171,7 @@ def select_spectra_for_analysis(mode:str = Modes.ALL) -> list :
     return spectra_files
 
 # Function to perform the cross-correlation analysis for a single spectrum using its filename
-def spectrum_analysis(spectrum_file : str) -> tuple[str, CrossCorrelationResult]:
+def spectrum_analysis(spectrum_file : str, profiles_to_fit : list[Profile]) -> tuple[str, CrossCorrelationResult]:
     """
     Function to perform the cross-correlation analysis for a single spectrum using its filename. It takes 
     as input the filename of a spectrum `.fits` file and returns a tuple containing the filename and 
@@ -167,6 +180,8 @@ def spectrum_analysis(spectrum_file : str) -> tuple[str, CrossCorrelationResult]
 
     :param spectrum_file: The filename of the spectrum `.fits` file
     :type spectrum_file: str
+    :param profiles_to_fit: The list of profiles to fit
+    :type profiles_to_fit: list[Profile]
     :return: A tuple containing the filename and the results of the cross-correlation analysis
     :rtype: tuple[str, CrossCorrelationResult]
     """
@@ -179,11 +194,11 @@ def spectrum_analysis(spectrum_file : str) -> tuple[str, CrossCorrelationResult]
                 # Convert the loaded spectrum data into a python object to easily manipulate it for the spectra analysis
                 spectrum_record = SpectrumRecord.from_fits(hdul)
                 # Using the dedicated method to perform spectrum analysis
-                results = cross_correlate(spectrum_record)
+                results = cross_correlate(spectrum_record, profiles_to_fit)
             # Return the results of the cross-correlation analysis
             return (results.file_name, results)
         else:
-            results = cross_correlate(spectrum_file)
+            results = cross_correlate(spectrum_file, profiles_to_fit)
             return (results.file_name, results)
     # If the cross-correlation analysis fails
     except Exception as e:
@@ -193,7 +208,7 @@ def spectrum_analysis(spectrum_file : str) -> tuple[str, CrossCorrelationResult]
         return None
 
 # Function to perform cross-correlation analysis on a spectrum record
-def cross_correlate(record : SpectrumRecord) -> CrossCorrelationResult:
+def cross_correlate(record : SpectrumRecord, profiles_to_fit : list[Profile]) -> CrossCorrelationResult:
     """
     Perform cross-correlation analysis between the observed flux and synthetic H₂ profiles.
 
@@ -206,6 +221,10 @@ def cross_correlate(record : SpectrumRecord) -> CrossCorrelationResult:
     instance containing the status and results of the analysis. The cross-correlation values
     are calculated using the `scipy.stats.spearmanr` function.
 
+    :param record: A `SpectrumRecord` instance containing the spectrum data.
+    :type record: `SpectrumRecord`
+    :param profiles_to_fit: A list of `Profile` instances to fit during the cross-correlation analysis.
+    :type profiles_to_fit: list[Profile]
     :return: A `CrossCorrelationResult` instance containing the status and results of the analysis.
     :rtype: CrossCorrelationResult
     """
@@ -299,7 +318,7 @@ def cross_correlate(record : SpectrumRecord) -> CrossCorrelationResult:
     # Perform cross-correlation analysis between the smoothed observed flux and the synthetic 
     # H₂ profiles for each redshift value in the defined range, to search for potential H₂ absorption 
     # features at different redshifts
-    for profile in ProfileManager.all_profiles():
+    for profile in profiles_to_fit:
 
         # Initialize arrays to store the analysis results for the current synthetic H₂ profile
         correlation_coefficients   = np.full_like(z_values, np.nan)
@@ -473,13 +492,13 @@ def cross_correlate(record : SpectrumRecord) -> CrossCorrelationResult:
 # Function to initialize the worker for the parallel processing of the spectra analysis, by loading the H₂ synthetic profiles in memory
 def init_worker():
     """
-    Initializes the worker for the parallel processing of the spectra analysis by loading all the H₂ 
-    synthetic profiles in memory and turning off interactive plots to prevent visual artifacts.
+    Initializes the worker for the parallel processing of the spectra analysis by turning off interactive 
+    plots to prevent visual artifacts.
 
     This function is intended to be used as an initializer for a `ProcessPoolExecutor`, and should not be 
     called directly.
     """
-    # Load all the H₂ synthetic profiles
-    ProfileManager.load_all(verbose=False)
+    
+    
     # Turn off interactive plots to prevent visual artifacts
     plt.ioff()

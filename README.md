@@ -13,6 +13,7 @@ onto supermassive black holes located at the centers of massive galaxies. Their 
 - Identification of absorption systems
 - Synthetic spectrum generation
 - Statistical analysis and visualization
+- Algorithm performance analysis using mock spectra
 
 ## Exemple results
 
