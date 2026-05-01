@@ -140,7 +140,7 @@ def plot_sample_statistics() -> None:
                     # Plotting the histogram with the associated categories colors
                     plot_sample_statistics_categories(table, col, ax)
 
-                # For the spectra with low SNR , plotting the histogram with the associated threshold for the SNR
+                # For the spectra with low SNR, plotting the histogram with the associated threshold for the SNR
                 case "SNR Range":
                     # Plotting the histogram with the associated function
                     plot_sample_statistics_threshold(table, col, 15., ColNames.SNR, ax)

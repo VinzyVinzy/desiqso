@@ -147,7 +147,7 @@ class AnalysisResults:
 
     # Class method to forcefully reload the results of the cross-correlation analysis from another folder as the default one
     @classmethod
-    def reload(cls, folder : str, verbose : bool = True) -> None:
+    def reload(cls, folder : str = CROSS_CORRELATION_RESULTS_FOLDER, verbose : bool = True) -> None:
         """
         This class method reloads the results of the cross-correlation analysis from another folder as the default one.
 

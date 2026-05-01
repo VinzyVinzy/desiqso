@@ -260,7 +260,7 @@ def sample_completeness_analysis(mock_spectra : dict[str, SpectrumRecord],  outp
         for i, threshold in enumerate(thresholds):
 
             # Compute the completeness for the current threshold and add it to the array
-            completeness = len(results_true[comparator(results_true[column], threshold)]) / len(results_true)
+            completeness = len(results_true[comparator(results_true[column], threshold)]) / len(results_true) if len(results_true) > 0 else 1
             completenesses[i] = completeness*100
             # Compute the purity for the current threshold and add it to the array
             purity = len(results_true[comparator(results_true[column], threshold)]) / (len(results_true[comparator(results_true[column], threshold)]) + len(results_false[comparator(results_false[column], threshold)])) if (len(results_true[comparator(results_true[column], threshold)]) + len(results_false[comparator(results_false[column], threshold)])) else np.nan
@@ -332,7 +332,7 @@ def mock_analysis(profile_to_add : Profile, profile_to_fit : Profile) -> None:
     # Mock spectra creation and cross-correlation analysis
     # ====================
 
-    # If the output folder is not empty
+    # If the output folder is empty
     if len(os.listdir(MOCK_ANALYSIS_FOLDER)) == 0:
         # Calling the function to add the H₂ synthetic profile to the spectra
         mock_spectra, sample_spectra = create_mock_spectra(profile_to_add, output_file)

@@ -5,6 +5,10 @@ analysis on them using parallel processing. The analysis is performed for all sy
 range of redshifts around the observed redshift of the quasar.
 """
 
+# Setting up the environment to avoid an error during the parallel processing
+import matplotlib
+matplotlib.use('Agg')
+
 # Importing necessary libraries
 from astropy.convolution import convolve, Box1DKernel
 from astropy.io import fits
@@ -498,7 +502,6 @@ def init_worker():
     This function is intended to be used as an initializer for a `ProcessPoolExecutor`, and should not be 
     called directly.
     """
-    
-    
+        
     # Turn off interactive plots to prevent visual artifacts
     plt.ioff()

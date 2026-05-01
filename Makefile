@@ -61,6 +61,10 @@ sample-statistics:
 run-mock-analysis:
 	$(PYTHON) $(DESIQSO)/pipelines/run_mock_analysis.py
 
+# Run completeness analysis command
+completeness-analysis:
+	$(PYTHON) $(DESIQSO)/pipelines/run_completeness.py
+
 # Run analysis command
 run-analysis:
 	$(PYTHON) $(DESIQSO)/pipelines/run_analysis.py
