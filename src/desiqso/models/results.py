@@ -40,6 +40,7 @@ class CrossCorrelationResult:
     best_correlation_parameters:Optional[list[float]]       = None
     snr:                        Optional[float]             = None
     continuum:                  Optional[float]             = None
+    cnr:                        Optional[float]             = None
     details:                    Optional[str]               = None
     best_fit_flags:             Optional[list[int]]         = None
 
@@ -95,17 +96,18 @@ class CrossCorrelationResult:
                         ColNames.FILENAME,  ColNames.NAME,          ColNames.RA,        ColNames.DEC,
                         ColNames.QSO_Z,     ColNames.Z,             ColNames.CORR_COEFF,ColNames.CORR_PROB,
                         ColNames.CORE_TRANS,ColNames.J_CORE_TRANS,  ColNames.CORR_PARAM,ColNames.SNR, 
-                        ColNames.CONTINUUM, ColNames.BEST_FIT_FLAG,
+                        ColNames.CONTINUUM, ColNames.CNR,           ColNames.BEST_FIT_FLAG,
                     ]
             # Define headers for the output file for low SNR spectra
             headers["low_snr"] = [
                     ColNames.FILENAME,  ColNames.NAME, ColNames.RA,         ColNames.DEC,
-                    ColNames.QSO_Z,     ColNames.SNR,   ColNames.CONTINUUM,
+                    ColNames.QSO_Z,     ColNames.SNR,   ColNames.CONTINUUM, ColNames.CNR,
                 ]
             # Define headers for the output file for the failed analyzed spectra
             headers["failed"] = [
                     ColNames.FILENAME,  ColNames.NAME, ColNames.RA,         ColNames.DEC,
-                    ColNames.QSO_Z,     ColNames.SNR,   ColNames.CONTINUUM, ColNames.DETAILS,
+                    ColNames.QSO_Z,     ColNames.SNR,   ColNames.CONTINUUM, ColNames.CNR,  
+                    ColNames.DETAILS,
                 ]
 
             # Write headers to the output files
@@ -137,6 +139,7 @@ class CrossCorrelationResult:
                 f"{self.redshift:.5f}",
                 f"{self.snr:.2f}",
                 f"{self.continuum:.2f}",
+                f"{self.cnr:.2f}",
             ]
             # Saving results
             path = self.__class__._results["low_snr"]
@@ -166,6 +169,7 @@ class CrossCorrelationResult:
                     f"{self.best_correlation_parameters[profile_idx]:.3f}",
                     f"{self.snr:.2f}",
                     f"{self.continuum:.2f}",
+                    f"{self.cnr:.2f}",
                     f"{self.best_fit_flags[profile_idx]}",
                 ]
                 # Saving results
@@ -184,6 +188,7 @@ class CrossCorrelationResult:
                 f"{self.redshift:.5f}",
                 f"{self.snr:.2f}",
                 f"{self.continuum:.2f}",
+                f"{self.cnr:.2f}",
                 f"{self.details}",
             ]
             # Saving results

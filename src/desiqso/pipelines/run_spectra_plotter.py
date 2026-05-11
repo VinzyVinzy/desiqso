@@ -13,10 +13,12 @@ if __name__ == "__main__":
     thresholds = {
         ColNames.CORR_PROB  :   (None, None),
         ColNames.CORE_TRANS :   (None, None),
-        ColNames.CORR_COEFF :   (None, None),
+        ColNames.CORR_COEFF :   (None, 0.45),
         ColNames.CORR_PARAM :   (None, None),
         ColNames.Z          :   (None, None),
-        ColNames.SNR        :   (None, None),
+        ColNames.QSO_Z      :   (2.6, None),
+        ColNames.SNR        :   (3., None),
+        ColNames.CNR        :   (None, None),
         ColNames.GRADE      :   (None, None),
         ColNames.REL_SPEED  :   (None, None),
     }

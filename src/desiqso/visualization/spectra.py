@@ -7,6 +7,7 @@ check the quality of the results.
 # Packages import
 from astropy.convolution import (convolve, Gaussian1DKernel,)
 import matplotlib.pyplot as plt
+from math import log10
 import os
 import pandas as pd
 from tqdm import tqdm
@@ -149,13 +150,13 @@ def plot_spectrum(row : pd.Series, folderpath : str, record : SpectrumRecord = N
     # Saving plot
     # ==================
 
-    #
+    # 
     if output_folder is None:
         output_folder = os.path.join(SPECTRA_PLOTS_FOLDER, f"{folderpath}/")
     # If the directory does not exist, create it
     os.makedirs(output_folder, exist_ok=True)
     # Saving plot
-    plt.savefig(output_folder + f"{record.filename[:-4]}_{profile.name}.png", bbox_inches='tight', dpi=400)
+    plt.savefig(output_folder + f"{record.filename[5:-5]}_h2-profile-ntot-{log10(profile.Ntot) :.1f}.png", bbox_inches='tight', dpi=400)
     
     # Closing plot
     plt.close(fig)

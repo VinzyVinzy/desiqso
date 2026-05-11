@@ -16,11 +16,14 @@ if __name__ == "__main__":
         pixel_size      = 5.,                   # Pixel size in km/s for the synthetic profile
         T_exc0          = 75.,                  # Excitation temperature of the J=0 level in K
         Jmax            = 1,                    # Maximum rotational level to include in the synthetic profile (0 and 1 by default)
-        Ntot            = 10**19.5,             # Total column density of H₂ in cm^-2
+        Ntot            = 10**20.0,             # Total column density of H₂ in cm^-2
         b_param         = 3.,                   # Doppler parameter for the synthetic profile in km/s
-        save            = True,                 # Save the synthetic profile so the program can access it
+        save            = False,                # Save the synthetic profile so the program can access it
         verbose         = False                 # Do not print information about the synthetic profile
     )
+
+    # Saving the generated synthetic H₂ profile in the `synthetic_profiles` folder
+    profile_to_fit.save()
 
     # Calling the function to run the completeness analysis
     run_completeness_analysis(profile_to_fit=profile_to_fit)

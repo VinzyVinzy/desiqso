@@ -257,7 +257,9 @@ class AnalysisResults:
             ColNames.CORR_COEFF   :   thresholds_dict.get(ColNames.CORR_COEFF, (None, None)),
             ColNames.CORR_PARAM   :   thresholds_dict.get(ColNames.CORR_PARAM, (None, None)),
             ColNames.Z            :   thresholds_dict.get(ColNames.Z, (None, None)),
+            ColNames.QSO_Z        :   thresholds_dict.get(ColNames.QSO_Z, (None, None)),
             ColNames.SNR          :   thresholds_dict.get(ColNames.SNR, (SNR_THRESHOLD, None)),
+            ColNames.CNR          :   thresholds_dict.get(ColNames.CNR, (None, None)),
             ColNames.GRADE        :   thresholds_dict.get(ColNames.GRADE, (None, None)),
             ColNames.REL_SPEED    :   thresholds_dict.get(ColNames.REL_SPEED, (None, None)),
         }
@@ -281,6 +283,8 @@ class AnalysisResults:
             table = table[table[ColNames.CATEGORY].isin(PREL_LIST)]
         elif mode == Modes.RANDOM:
             table = table.sample(n=100, axis=1)
+        elif mode == Modes.OTHER:
+            table = table[table[ColNames.CATEGORY] == Categories.OTHER]
         elif mode == Modes.VALID:
             table = table[table[ColNames.IS_VALID] == 1]
 
@@ -299,6 +303,35 @@ class AnalysisResults:
 
         # Returning the filtered results
         return filtered_table
+
+    # Class method to export a subset of the results of the cross-correlation analysis
+    @classmethod
+    def export_results_list(cls, path : str, mode : str, thresholds : dict[str, tuple[float]]) -> None:
+        """
+        This class method allows the user to export a subset of the results of the cross-correlation analysis.
+
+        :param path: The path to the output file.
+        :type path: str
+        :param mode: The mode of the survey. It can be any value from the `Modes` Enum.
+        :type mode: str
+        :param thresholds: A dictionary containing the thresholds for each parameter.
+        :type thresholds: dict[str, tuple[float]]
+        :returns None: This method does not return anything.
+        """
+
+        # Retrieving the results corresponding to the selected mode and thresholds
+        results_table = cls.results_survey(mode=mode, thresholds_dict=thresholds)
+        # Creating the directory if it does not exist
+        savepath = os.path.dirname(path)
+        os.makedirs(savepath, exist_ok=True)
+        # Sort the results table by correlation parameter
+        results_table = results_table.sort_values(by=ColNames.CORR_PARAM, ascending=False)
+        # Selecting the columns to keep from the results table
+        columns_to_keep = [ColNames.NAME, ColNames.QSO_Z, ColNames.Z, ColNames.CORR_COEFF, ColNames.CORE_TRANS, ColNames.CORR_PARAM, ColNames.SNR, ColNames.CNR, ColNames.GRADE, ColNames.REL_SPEED, ColNames.CATEGORY]
+        # Exporting the results to a CSV file
+        results_table[columns_to_keep].to_csv(path+".csv", index=False, float_format='%.5f')
+        # Returning to the main function
+        return
 
 # Utility function to identify the category (data group) of a spectrum
 def which_data_group(filename: str) -> str:

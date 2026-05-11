@@ -107,11 +107,12 @@ class SpectrumRecord:
 
         # Compute constant continuum value
         #continuum_value = np.quantile(flux_region, 0.75) * 4./3.
-        continuum_value = np.quantile(flux_region, 0.80)
+        #continuum_value = np.quantile(flux_region, 0.80)
+        continuum_value = np.quantile(flux_region, 0.90)*1.1 - 1.3*np.median(self.err[region])
 
         # Check if the computed value is not valid, which is the case if it is finite and greater than 0
         if not _is_valid_continuum(continuum_value):
-            # Return -1. for invalid values
+            # Return NaN for invalid values
             return np.nan
 
         # Return the constant continuum level
@@ -138,6 +139,15 @@ class SpectrumRecord:
         else :
             return np.median(self.flux[region_snr]/self.err[region_snr].mean())
 
+    # Property to access rapidly the estimated Continuum-to-Noise Ratio (CNR) of the spectrum
+    @property
+    def cnr(self) -> float:
+        """"""
+        # Determining Lyman-Werner region for the spectrum using its redshift
+        region = ((self.wavelength >= H2_LYMAN_WERNER_BANDS[0] * (1. + self.redshift)) & (self.wavelength <= H2_LYMAN_WERNER_BANDS[1] * (1. + self.redshift)))
+        # Compute Continuum-to-Noise Ratio (CNR) in the Lyman-Werner region using the estimated continuum level and the error array
+        return self.continuum / np.median(self.err[region])
+    
     # Property to access rapidly the file name of the spectrum
     @property
     def filename(self) -> str:

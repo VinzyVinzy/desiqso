@@ -51,6 +51,7 @@ class ColNames(StrEnum):
     CORR_PARAM      =   "Correlation parameter"
     SNR             =   "SNR"
     CONTINUUM       =   "Continuum"
+    CNR             =   "CNR"
     BEST_FIT_FLAG   =   "Best fit flag"
     DETAILS         =   "Details"
     GRADE           =   "Grade"
@@ -71,6 +72,7 @@ COLUMN_FILE_LABELS = {
     ColNames.CORR_PARAM      : "corr-param",
     ColNames.SNR             : "snr",
     ColNames.CONTINUUM       : "continuum",
+    ColNames.CNR             : "cnr",
     ColNames.GRADE           : "grade",
     ColNames.REL_SPEED       : "rel-speed",
 }
@@ -89,6 +91,7 @@ class Modes(StrEnum):
     CONFIRMED   = Categories.CONFIRMED
     REJECTED    = Categories.REJECTED
     BORDERLINE  = Categories.BORDERLINE
+    OTHER       = Categories.OTHER
     SAMPLE      = "sample"
 
 # List of analysis modes associated with preliminary analysis

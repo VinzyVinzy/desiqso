@@ -65,6 +65,10 @@ run-mock-analysis:
 completeness-analysis:
 	$(PYTHON) $(DESIQSO)/pipelines/run_completeness.py
 
+# Export analysis results command
+export-results:
+	$(PYTHON) $(DESIQSO)/pipelines/run_export.py
+
 # Run analysis command
 run-analysis:
 	$(PYTHON) $(DESIQSO)/pipelines/run_analysis.py

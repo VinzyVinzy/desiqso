@@ -41,6 +41,7 @@ bins = {
     ColNames.RA         : np.arange(0, 370, 10),
     ColNames.DEC        : np.arange(-40, 95, 5),
     ColNames.CORR_PARAM : np.arange(0., 1.025, 0.025),
+    ColNames.CORR_COEFF : np.arange(-0.05, 1.025, 0.025),
     ColNames.CORE_TRANS : np.arange(-1., 1., 0.05),
     ColNames.GRADE      : np.arange(-0.5, 7.5, 1),
     ColNames.REL_SPEED  : np.arange(-2600, 2600, 100),
@@ -111,12 +112,12 @@ def plot_sample_statistics() -> None:
     cols_dict = {
         "Low SNR"       : [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z,             ColNames.RA, ColNames.DEC,],
         "Failed"        : [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z,             ColNames.RA, ColNames.DEC,],
-        "Successful"    : [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
-        "Confirmed"     : [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
-        "Rejected"      : [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
-        "Valid"         : [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
-        "SNR Range"     : [ColNames.SNR,                     ColNames.QSO_Z,             ColNames.RA, ColNames.DEC, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE,],
-        "New Candidates": [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Successful"    : [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Confirmed"     : [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Rejected"      : [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Valid"         : [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "SNR Range"     : [ColNames.SNR,                     ColNames.QSO_Z,             ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE,],
+        "New Candidates": [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
     }
 
     # ================================
@@ -143,7 +144,7 @@ def plot_sample_statistics() -> None:
                 # For the spectra with low SNR, plotting the histogram with the associated threshold for the SNR
                 case "SNR Range":
                     # Plotting the histogram with the associated function
-                    plot_sample_statistics_threshold(table, col, 15., ColNames.SNR, ax)
+                    plot_sample_statistics_threshold(table, col, 3., ColNames.SNR, ax)
 
                 # For all the other categories
                 case _:

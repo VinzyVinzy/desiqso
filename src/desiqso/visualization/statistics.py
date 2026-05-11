@@ -12,8 +12,8 @@ It currently contains the following functions:
 from astropy.convolution import (convolve, Box1DKernel,)
 import matplotlib.colors as mcolors
 import matplotlib.cm as cm
-import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
@@ -35,12 +35,13 @@ from src.desiqso.utils.helpers import normalize
 # Global variable to store the sizes of the plots
 plot_sizes = {
     ColNames.CORR_PROB  : [0, 0], 
-    ColNames.CORR_COEFF : [-0.05, 1.05], 
+    ColNames.CORR_COEFF : [-0.15, 1.05], 
     ColNames.CORR_PARAM : [-0.05, 1.05], 
-    ColNames.CORE_TRANS : [-0.55, 0.85],
+    ColNames.CORE_TRANS : [-0.95, 0.95],
     ColNames.Z          : [2.5, 6.0], 
     ColNames.QSO_Z      : [2.5, 6.0], 
-    ColNames.SNR        : [0, 50], 
+    ColNames.SNR        : [0, 50],
+    ColNames.CNR        : [0, 50], 
     ColNames.GRADE      : [-0.5, 6.5], 
     ColNames.REL_SPEED  : [-2600, 2600],
 }
@@ -331,7 +332,7 @@ def plot_corrcoeff_vs_coretrans_2d(z_values : np.ndarray, correlation_coefficien
     return
 
 # Function to plot statistics distribution as scatter (with contour levels) or bin plot using a list of tuples containing the names of the statistics to plot
-def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, tuple[float]], profile_name : str, mode : str = Modes.ALL, data : pd.DataFrame = None, savepath : str = None, add_label : str = None) -> None:
+def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, tuple[float]], profile_name : str, color_col : str = ColNames.GRADE, mode : str = Modes.ALL, data : pd.DataFrame = None, savepath : str = None, add_label : str = None) -> None:
     """
     Main function to plot statistics distribution as scatter (with contour levels) 
     or bin plot using a list of tuples containing the names of the statistics to 
@@ -345,6 +346,8 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
     :type profile_name: str
     :param result_table: Table containing the results of the cross-correlation analysis.
     :type result_table: pd.DataFrame
+    :param color_col: Name of the column to use for the colormapping in the scatter plots.
+    :type color_col: str
     :param mode: Mode of the analysis. Can be "all" or "random".
     :type mode: str
     :param data: Data to plot. If None, the data is loaded from the results table.
@@ -359,8 +362,12 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
     # Configuration parameters
     # =========
 
-    # Turn off interactive mode to prevent visual artifacts
+    # Turn off interactive mode to prevent displaying bugs
     plt.ioff()
+    # Update plot settings
+    settings["ytick.right"] = True
+    settings["xtick.top"]   = True
+    plt.rcParams.update(**settings)
 
     # Initialize the data to plot using the thresholds
     if data is None:
@@ -375,6 +382,9 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
 
         # Setting plot type depending on the x-axis values
         PLOT_TYPE = "bin" if x_key in [ColNames.Z, ColNames.SNR, ColNames.GRADE] else "scatter"
+        # Setting the plot type for the case of CNR
+        if x_key == ColNames.CNR and y_key == ColNames.CORE_TRANS:
+            PLOT_TYPE = "bin"
     
         # Creating the figure and axis
         _, ax = plt.subplots(figsize=(12,8))
@@ -395,7 +405,7 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
         # If the plot mode is set to "bin"
         if PLOT_TYPE == "bin":
             # If the x-key is "grade"
-            if x_key == "grade":
+            if x_key == ColNames.GRADE:
                 # Calling the function dealing with the "grade" case
                 plot_grade_bin(x_data, y_data, ax=ax)
 
@@ -406,7 +416,7 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
         # If the plot mode is set to "scatter"
         else:
             # Calling the function to plot the scatter
-            plot_scatter(data, x_key, y_key, ax=ax)
+            plot_scatter(data, x_key, y_key, color_col, ax=ax)
         
         # =========
         # Plot formatting
@@ -465,10 +475,13 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
                 plot_name += f"_{COLUMN_FILE_LABELS[key]}-{min_val if min_val is not None else 'None'}-{max_val if max_val is not None else 'None'}"
         # Generating plot path, adding the mode and profile name to the path
         if savepath is None:
-            savepath = os.path.join((STATISTICS_PLOTS_FOLDER), f"{profile_name}_{mode}/")
+            savepath = os.path.join((STATISTICS_PLOTS_FOLDER), f"{profile_name}_{mode}_color-{COLUMN_FILE_LABELS[color_col]}/")
         # If the directory does not exist, create it
         os.makedirs(savepath, exist_ok=True)
         plt.savefig(savepath + f"{plot_name}.png", dpi=600)
+
+        # Closing the figure
+        plt.close()
 
         # Inform the user
         tqdm.write(f"[INFO] Plot saved to {savepath}{plot_name}\n")
@@ -542,16 +555,21 @@ def plot_grade_bin(x_data : pd.DataFrame, y_data : pd.DataFrame, ax : plt.Axes) 
     :type ax: plt.Axes
     """
 
+    # Retrieving the unique grades and sorting them
+    grades = sorted(set(x_data))
+
     # Initializing the lists containing the means and the standard deviations for each grade
     means = []
     stds = []
     # Loop on the grades
-    for grade in set(x_data):
+    for grade in grades:
+        # Filtering the data for the current grade
         y_g = [y for x, y in zip(x_data, y_data) if x == grade]
+        # Computing the mean and the standard deviation
         means.append(np.mean(y_g))
         stds.append(np.std(y_g))
     # Plotting the error bar plot
-    ax.errorbar(sorted(set(x_data)), means, yerr=stds, fmt="o", color="black", ecolor="black", capsize=4, capthick=1)
+    ax.errorbar(grades, means, yerr=stds, xerr=[0.5]*len(grades), fmt="o", color="black", ecolor="black", capsize=4, capthick=1)
 
 # This function plots a binned scatter plot for the provided data
 def plot_standard_bin(x_data : pd.DataFrame, y_data : pd.DataFrame, ax : plt.Axes) -> None:
@@ -568,7 +586,7 @@ def plot_standard_bin(x_data : pd.DataFrame, y_data : pd.DataFrame, ax : plt.Axe
     """
 
     # Creating the binned statistic
-    bin_means, bin_edges, _ = binned_statistic(x_data, y_data, statistic="mean", bins=15)
+    bin_means, bin_edges, _ = binned_statistic(x_data, y_data, statistic="mean", bins=30)
     bin_std, _, _ = binned_statistic(x_data, y_data, statistic="std", bins=bin_edges)
     # Computing the bin centers and widths
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
@@ -577,9 +595,9 @@ def plot_standard_bin(x_data : pd.DataFrame, y_data : pd.DataFrame, ax : plt.Axe
     ax.errorbar(bin_centers, bin_means, xerr=bin_widths, yerr=bin_std, fmt="o", color="black", ecolor="black", capsize=4, capthick=1)
 
 # This function plots a scatter plot for the provided data
-def plot_scatter(data : pd.DataFrame, x_key : str, y_key : str, ax : plt.Axes) -> None:
+def plot_scatter(data : pd.DataFrame, x_key : str, y_key : str, color_col : str, ax : plt.Axes) -> None:
     """
-    Plots a scatter plot representing the provided data distribution.
+    Plots a scatter plot representing the provided data distribution, with colormapping.
 
     :param data: The data to plot.
     :type data: pd.DataFrame
@@ -587,11 +605,27 @@ def plot_scatter(data : pd.DataFrame, x_key : str, y_key : str, ax : plt.Axes) -
     :type x_key: str
     :param y_key: The key corresponding to the y-axis values.
     :type y_key: str
+    :param color_col: The key corresponding to the column to use for the colormapping.
+    :type color_col: str
     :param ax: The axis to plot on.
     :type ax: plt.Axes
     """
 
+    # Ordering the categories for a better visualization
     categories = [Categories.OTHER, Categories.REJECTED, Categories.BORDERLINE, Categories.CONFIRMED]
+
+    # Dictionnary for the colormap values
+    colormap_values = {ColNames.GRADE : [0.0, 6.0], ColNames.QSO_Z : [2.5, 6.0], ColNames.SNR : [1.5, 15.0], ColNames.CNR : [0.5, 15.0]}
+    colormap_palettes = {ColNames.GRADE : "viridis", ColNames.QSO_Z : "rainbow", ColNames.SNR : "rainbow", ColNames.CNR : "rainbow"}
+    colormap_ticks = {ColNames.GRADE : [0, 1, 2, 3, 4, 5, 6], ColNames.QSO_Z : [2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0], ColNames.SNR : [1.5, 3.0, 4.5, 6.0, 7.5, 9.0, 10.5, 12.0, 15.0], ColNames.CNR : [0.5, 1.5, 3.0, 4.5, 6.0, 7.5, 9.0, 10.5, 12.0, 15.0]}
+
+    # Setting the normalization for the colorbar based on color column chosen
+    if color_col == ColNames.QSO_Z:
+        norm = mcolors.PowerNorm(gamma=0.4, vmin=colormap_values[color_col][0], vmax=colormap_values[color_col][1])
+    elif color_col in [ColNames.SNR, ColNames.CNR]:
+        norm = mcolors.PowerNorm(gamma=0.3, vmin=colormap_values[color_col][0], vmax=colormap_values[color_col][1])
+    else:
+        norm = mcolors.Normalize(vmin=colormap_values[color_col][0], vmax=colormap_values[color_col][1])
 
     # Loop on the data groups
     for category in categories:
@@ -600,22 +634,32 @@ def plot_scatter(data : pd.DataFrame, x_key : str, y_key : str, ax : plt.Axes) -
         # Retrieving the x and y values related to the current data group
         x_values = group[x_key]
         y_values = group[y_key]
-        grades   = group[ColNames.GRADE]
+        color_vals = group[color_col]
         # Scatter plot of the current data group
-        plt.scatter(x_values, y_values, c=grades, cmap="viridis", norm=mcolors.Normalize(vmin=0, vmax=6), marker=markers[category], s=sizes[category], alpha=alphas[category], edgecolors=edgecolors[category], linewidths=1.,)
+        plt.scatter(x_values, y_values, c=color_vals, cmap=colormap_palettes[color_col], norm=norm, marker=markers[category], s=sizes[category], alpha=alphas[category], edgecolors=edgecolors[category], linewidths=1.,)
     
+    # If the keys are the correlation coefficient and the core transmission
+    if x_key == ColNames.CORR_COEFF and y_key == ColNames.CORE_TRANS:
+        # Creating an array of correlation coefficients
+        corr_coeffs = np.linspace(0.001, 1., 100)
+        # Computing the corresponding core transmission representing the correlation parameter threshold
+        core_trans = 1 - (CORRELATION_PARAM_THRESHOLD / corr_coeffs)
+        # Plotting the correlation parameter threshold
+        ax.plot(corr_coeffs, core_trans, color="black", linestyle="--", linewidth=2)
+
     # Creating the colorbar and initializing it
-    sm = cm.ScalarMappable(cmap="viridis", norm=mcolors.Normalize(vmin=0, vmax=6))
+    sm = cm.ScalarMappable(cmap=colormap_palettes[color_col], norm=norm)
     sm.set_array([])
     # Adding the colorbar to the plot
     cbar = plt.colorbar(sm, ax=ax)
     # Labeling the colorbar
-    cbar.set_label("Grade")
+    cbar.set_label(color_col)
     # Setting the colorbar ticks
-    cbar.set_ticks(range(7))
+    cbar.set_ticks(colormap_ticks[color_col])
+    cbar.set_ticklabels([str(t) for t in colormap_ticks[color_col]])
 
 # Entry point for `plot-statistics` command
-def plot_statistics(plot_pairs : list[tuple[str, str]], thresholds : dict[str, tuple[float]], mode : str = Modes.ALL) -> None:
+def plot_statistics(plot_pairs : list[tuple[str, str]], thresholds : dict[str, tuple[float]], color_col : str = ColNames.GRADE, mode : str = Modes.ALL) -> None:
     """
     This function manages the behavior of the `plot-statistics` command. It contains
     an option to plot the evolution of certain distribution with the SNR. It takes as 
@@ -623,6 +667,12 @@ def plot_statistics(plot_pairs : list[tuple[str, str]], thresholds : dict[str, t
 
     :param plot_pairs: List of tuples containing the names of the statistics to plot.
     :type plot_pairs: list[tuple[str, str]]
+    :param thresholds: Dictionary containing the minimum and maximum values for each statistic.
+    :type thresholds: dict[str, tuple[float]]
+    :param color_col: Name of the column to use for the colormap. Defaults to ColNames.GRADE.
+    :type color_col: str
+    :param mode: Mode of the analysis. See the `Modes` enum. Defaults to Modes.ALL.
+    :type mode: str
     """
     
     # Loading cross-correlation analysis results
@@ -635,8 +685,9 @@ def plot_statistics(plot_pairs : list[tuple[str, str]], thresholds : dict[str, t
 
         # Calling function to plot the p-value and core transmission distribution of all the processed spectra
         plot_distribution(
-            plot_pairs      =   plot_pairs,    # Pairs of analysis parameters to plot
-            thresholds      =   thresholds,
-            profile_name    =   profile_name,
-            mode            =   mode,
+            plot_pairs      =   plot_pairs,         # Pairs of analysis parameters to plot
+            thresholds      =   thresholds,         # Dictionary containing the minimum and maximum values for each analysis parameter
+            profile_name    =   profile_name,       # Name of the synthetic profile
+            color_col       =   color_col,          # Name of the column to use for the colormap
+            mode            =   mode,               # Mode of the analysis
         )

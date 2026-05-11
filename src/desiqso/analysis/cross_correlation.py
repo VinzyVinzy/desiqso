@@ -252,10 +252,8 @@ def cross_correlate(record : SpectrumRecord, profiles_to_fit : list[Profile]) ->
                                       redshift      =   record.redshift,
                                       snr           =   record.snr,
                                       continuum     =   continuum,
+                                      cnr           =   np.nan,
                                       details       =   "Invalid continuum level")
-    # Compute Continuum-to-Noise Ratio (CNR) in the Lyman-Werner region using the estimated 
-    # continuum level and the error array
-    CNR = continuum / record.err[region].mean()
     # Compute Signal-to-Noise Ratio (SNR) outside the Lyman-Werner region
     SNR = record.snr
     # Compute (if possible) signal to noise ration (SNR) in the SNR estimation region using 
@@ -270,6 +268,7 @@ def cross_correlate(record : SpectrumRecord, profiles_to_fit : list[Profile]) ->
                                       redshift      =   record.redshift,
                                       snr           =   SNR,
                                       continuum     =   continuum,
+                                      cnr           =   record.cnr,
                                       details       =   "No SNR could be computed")
 
     # ==============
@@ -287,7 +286,8 @@ def cross_correlate(record : SpectrumRecord, profiles_to_fit : list[Profile]) ->
                                       dec           =   record.dec, 
                                       redshift      =   record.redshift, 
                                       snr           =   SNR,
-                                      continuum     =   continuum)
+                                      continuum     =   continuum,
+                                      cnr           =   record.cnr,)
 
     # Smooth the observed flux using a boxcar kernel to reduce noise and enhance the signal for the 
     # cross-correlation analysis
@@ -446,6 +446,7 @@ def cross_correlate(record : SpectrumRecord, profiles_to_fit : list[Profile]) ->
                                           redshift      =   record.redshift, 
                                           snr           =   SNR,
                                           continuum     =   continuum,
+                                          cnr           =   record.cnr,
                                           details       =   "No valid correlation coefficients")  
         # Find the best correlation index in all the results
         else:
@@ -470,6 +471,7 @@ def cross_correlate(record : SpectrumRecord, profiles_to_fit : list[Profile]) ->
                                       redshift    =   record.redshift, 
                                       snr         =   SNR,
                                       continuum   =   continuum,
+                                      cnr         =   record.cnr,
                                       details     =   "No valid core transmissions") 
     
     # Create list to find best fit
@@ -491,6 +493,7 @@ def cross_correlate(record : SpectrumRecord, profiles_to_fit : list[Profile]) ->
                                   best_correlation_parameters=   best_correlation_parameters,
                                   snr                        =   SNR,
                                   continuum                  =   continuum,
+                                  cnr                        =   record.cnr,
                                   best_fit_flags             =   best_fit_flags)
 
 # Function to initialize the worker for the parallel processing of the spectra analysis, by loading the H₂ synthetic profiles in memory

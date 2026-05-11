@@ -15,7 +15,7 @@ from tqdm import tqdm
 # Local imports
 from src.desiqso.analysis.absorption_masks import compute_h2_absorption_masks
 from src.desiqso.analysis.cross_correlation import (run_cross_correlation_analysis, select_spectra_for_analysis)
-from src.desiqso.config import (settings, RESULTS_FOLDER,)
+from src.desiqso.config import (settings, RESULTS_FOLDER,CORRELATION_PARAM_THRESHOLD,)
 from src.desiqso.constants import (ColNames, COLUMN_FILE_LABELS, Modes, Categories,)
 from src.desiqso.data.loader import load_spectrum_from_filename
 from src.desiqso.models.dataset import AnalysisResults
@@ -130,12 +130,20 @@ def mock_spectra_statistics(mock_spectra : dict[str, SpectrumRecord], profile_to
     # Inform user
     print("\n[INFO] Plotting statistics distributions...")
 
+    # Turn off interactive mode to prevent displaying bugs
+    plt.ioff()
+    # Update plot settings
+    settings["ytick.right"] = True
+    settings["xtick.top"]   = True
+    plt.rcParams.update(**settings)
+
     # Defining the pairs of statistics to plot
     plot_pairs = [
-        (ColNames.SNR, ColNames.CORR_PARAM),
-        (ColNames.CORR_PARAM, ColNames.CORE_TRANS),
+#        (ColNames.SNR, ColNames.CORR_PARAM),
+#        (ColNames.CORR_PARAM, ColNames.CORE_TRANS),
         (ColNames.CORR_COEFF, ColNames.CORE_TRANS),
-        (ColNames.Z, ColNames.CORR_PARAM),
+#        (ColNames.Z, ColNames.CORR_PARAM),
+#        (ColNames.GRADE, ColNames.CORR_PARAM),
     ]
 
     # Retrieve the results table from the `AnalysisResults` class
@@ -146,6 +154,8 @@ def mock_spectra_statistics(mock_spectra : dict[str, SpectrumRecord], profile_to
     mock_success = mock_results[mock_results[ColNames.IS_VALID] == 1].copy()
     # Retrieve the table containing the results for the mock spectra not found
     mock_failed = mock_results[mock_results[ColNames.IS_VALID] == 0].copy()
+    # Retrieve the table containing the results for the false mock spectra
+    false_mock = results[~results[ColNames.FILENAME].isin(mock_spectra.keys())].copy()
 
     # Defining the data, save path and additionnal labels to plot on the statistics plots
     plot_params = [
@@ -153,6 +163,7 @@ def mock_spectra_statistics(mock_spectra : dict[str, SpectrumRecord], profile_to
         (mock_results, f"{output_folder}stats/statistics_mock/",          "MOCK ANALYSIS : Mock spectra"),
         (mock_success, f"{output_folder}stats/statistics_mock_valid/",    "MOCK ANALYSIS : Mock spectra (valid)"),
         (mock_failed,  f"{output_folder}stats/statistics_mock_not_valid/","MOCK ANALYSIS : Mock spectra (not valid)"),
+        (false_mock,   f"{output_folder}stats/statistics_false_mock/",    "MOCK ANALYSIS : False mock spectra"),
     ]
 
     # Looping over the plot parameters
@@ -161,7 +172,7 @@ def mock_spectra_statistics(mock_spectra : dict[str, SpectrumRecord], profile_to
         if len(table) < 5:
             continue
         # Calling the `plot_distribution` function to plot the statistics distributions
-        plot_distribution(plot_pairs=plot_pairs, thresholds={}, profile_name=profile_to_fit.name, mode=Modes.ALL, data=table, savepath=savepath, add_label=label)
+        plot_distribution(plot_pairs=plot_pairs, thresholds={}, profile_name=profile_to_fit.name, color_col=ColNames.SNR, mode=Modes.ALL, data=table, savepath=savepath, add_label=label)
     
     # ================
     # Plotting mock spectra
@@ -170,15 +181,15 @@ def mock_spectra_statistics(mock_spectra : dict[str, SpectrumRecord], profile_to
     # Inform user
     print("\n[INFO] Plotting mock spectra...")
 
-    # Selecting maximum 20 random valid mock spectra with a fixed seed for reproductibility
-    table = mock_success.sample(n=min(20, len(mock_success)), random_state=42)
+    # Selecting maximum 10 random valid mock spectra with a fixed seed for reproductibility
+    table = mock_success.sample(n=min(5, len(mock_success)), random_state=42)
     # Loop on the list of valid spectra
     for _, row in tqdm(table.iterrows(), total=len(table), desc="Plotting valid mock spectra", unit="spectra"):
         # Plotting the spectrum using the dedicated function, without showing the plot
         plot_spectrum(row=row, folderpath="", record=mock_spectra[row[ColNames.FILENAME]], output_folder=f"{output_folder}spectra_mock_valid/")
     
-    # Selecting maximum 20 random not valid mock spectra with a fixed seed for reproductibility
-    table = mock_failed.sample(n=min(20, len(mock_failed)), random_state=42)
+    # Selecting maximum 10 random not valid mock spectra with a fixed seed for reproductibility
+    table = mock_failed.sample(n=min(5, len(mock_failed)), random_state=42)
     # Loop on the list of valid spectra
     for _, row in tqdm(table.iterrows(), total=len(table), desc="Plotting not valid mock spectra", unit="spectra"):
         # Plotting the spectrum using the dedicated function, without showing the plot
@@ -188,7 +199,7 @@ def mock_spectra_statistics(mock_spectra : dict[str, SpectrumRecord], profile_to
     return
 
 # Function to study the evolution of sample completeness with the threshold on given columns
-def sample_completeness_analysis(mock_spectra : dict[str, SpectrumRecord],  output_folder : str, columns : list[str] = [ColNames.CORR_PARAM]) -> None:
+def sample_completeness_analysis(mock_spectra : dict[str, SpectrumRecord],  output_folder : str, profile_added : Profile, profile_fitted : Profile, columns : list[str] = [ColNames.CORR_PARAM]) -> None:
     """
     This function plots the evolution of the valid sample completeness and purity with the threshold on given columns.
 
@@ -196,6 +207,10 @@ def sample_completeness_analysis(mock_spectra : dict[str, SpectrumRecord],  outp
     :type mock_spectra: dict[str, SpectrumRecord]
     :param output_folder: Output folder path
     :type output_folder: str
+    :param profile_added: Profile added to the mock spectra
+    :type profile_added: Profile
+    :param profile_fitted: Profile fitted during the cross-correlation analysis
+    :type profile_fitted: Profile
     :param columns: List of columns to threshold on, defaults to [ColNames.CORR_PARAM]
     :type columns: list[str], optional
     """
@@ -230,8 +245,8 @@ def sample_completeness_analysis(mock_spectra : dict[str, SpectrumRecord],  outp
 
     # Defining the dictionnary containing the thresholds to loop over
     thresholds_dict = {
-        ColNames.CORR_PARAM : np.linspace(0.0, 1.0, 150),
-        ColNames.CORR_COEFF : np.linspace(0.0, 1.0, 150),
+        ColNames.CORR_PARAM : np.linspace(0.0, 1.0, 100),
+        ColNames.CORR_COEFF : np.linspace(0.0, 1.0, 100),
         ColNames.CORE_TRANS : np.linspace(-1.0, 1.0, 200),
         ColNames.GRADE      : np.linspace(0.0, 6.0, 7),
     }
@@ -244,7 +259,7 @@ def sample_completeness_analysis(mock_spectra : dict[str, SpectrumRecord],  outp
     for column in tqdm(columns, desc="Completeness analysis", unit="columns"):
 
         # Inform user
-        tqdm.write(f"\n[INFO] Plotting sample completeness for column {column}...")
+        tqdm.write(f"\n[INFO] Plotting {column.lower()} for mock spectra sample...")
 
         # Retrieve the thresholds for the current column
         thresholds = thresholds_dict[column]
@@ -255,6 +270,7 @@ def sample_completeness_analysis(mock_spectra : dict[str, SpectrumRecord],  outp
         # Initializing the arrays to store the completenesses and purities
         completenesses = np.zeros(len(thresholds))
         purities = np.zeros(len(thresholds))
+        false_detections = np.zeros(len(thresholds))
 
         # Looping over some values to set as thresholds for the current column
         for i, threshold in enumerate(thresholds):
@@ -265,31 +281,39 @@ def sample_completeness_analysis(mock_spectra : dict[str, SpectrumRecord],  outp
             # Compute the purity for the current threshold and add it to the array
             purity = len(results_true[comparator(results_true[column], threshold)]) / (len(results_true[comparator(results_true[column], threshold)]) + len(results_false[comparator(results_false[column], threshold)])) if (len(results_true[comparator(results_true[column], threshold)]) + len(results_false[comparator(results_false[column], threshold)])) else np.nan
             purities[i] = purity*100
+            # Compute the number of false detections for the current threshold and add it to the array
+            false_detection = len(results_false[comparator(results_false[column], threshold)]) / len(results_false) if len(results_false) > 0 else 1
+            false_detections[i] = false_detection*100
 
         # Creating the figure and axis
-        _, ax = plt.subplots(figsize=(12,8))
+        _, ax = plt.subplots(figsize=(14,8))
         # Plotting the completenesses
-        ax.plot(thresholds, completenesses, color='blue', label=f"Completeness")
+        ax.plot(thresholds, completenesses, color='blue', label=rf"Completeness ($C$)")
         # Plotting the purities
-        ax.plot(thresholds, purities, color='green', label=f"Purity")
+        ax.plot(thresholds, purities, color='green', label=rf"Purity ($P$)")
+        # Plotting the false detections
+        ax.plot(thresholds, false_detections, color='red', label=rf"False detection rate ($FR$)")
         # Displaying the number of spectra used
         ax.text(0.05, 0.10, rf"N$_{{H_2}}$ = {len(results_true)}"+"\n"+rf"N$_{{~H_2}}$ = {len(results_false)}", transform=ax.transAxes, fontsize=12, va='top')
-        # Finding the best threshold, corresponding to the intersection of the two curves
-        best_threshold = thresholds[~((completenesses == 0) & (purities == 0))][np.nanargmin(np.abs(completenesses - purities)[~((completenesses == 0) & (purities == 0))])]
-        plt.axvline(best_threshold, color='red', linestyle='--', linewidth=1.5, label=f"Best threshold: {best_threshold:.2f}")
+        # Finding the best threshold, corresponding to the first threshold value for which the false detection rate is inferior to 1%
+        best_threshold = thresholds[np.argmax(false_detections < 1)]
+        plt.axvline(best_threshold, color='red', linestyle='--', linewidth=1.5, label=rf"Best threshold: {best_threshold:.2f}, $C=${completenesses[np.argmax(false_detections < 1)]:.2f}%, $P=${purities[np.argmax(false_detections < 1)]:.2f}%, $FR=${false_detections[np.argmax(false_detections < 1)]:.2f}%")
+        # Displaying the current threshold and the associated completeness
+        if column == ColNames.CORR_PARAM:
+            plt.axvline(CORRELATION_PARAM_THRESHOLD, color="k", linestyle=":", linewidth=1.5, label=f"Current threshold: {CORRELATION_PARAM_THRESHOLD:.2f}, $C=${completenesses[np.argmin(np.abs(thresholds - CORRELATION_PARAM_THRESHOLD))]:.2f}%, $P=${purities[np.argmin(np.abs(thresholds - CORRELATION_PARAM_THRESHOLD))]:.2f}%, $FR=${false_detections[np.argmin(np.abs(thresholds - CORRELATION_PARAM_THRESHOLD))]:.2f}%")
         # Setting x-axis and y-axis limits
         plt.xlim(min(thresholds), max(thresholds))
         plt.ylim(-5, 105)
         # Adding the legend and title
-        plt.title(f"Evolution of sample completeness and purity with the threshold on {column}")
-        plt.legend(loc="upper left")
+        plt.title(f"Evolution of algorithm completeness, purity and false detection rate with the threshold on {column}\nFitted profile: {profile_fitted.name}\nAdded profile: {profile_added.name}")
+        plt.legend(loc="upper left", fontsize=10)
         # Setting axis labels
-        plt.xlabel("Threshold value")
-        plt.ylabel("Completeness and purity (%)")
+        plt.xlabel(f"{column} threshold value")
+        plt.ylabel("Completeness, purity and false detection rate (%)")
         # Adding the grid
         plt.grid(alpha=0.3)
         # Saving the figure
-        plt.savefig(f"{output_folder}{COLUMN_FILE_LABELS[column]}.png", dpi=300)
+        plt.savefig(f"{output_folder}{COLUMN_FILE_LABELS[column]}.png", dpi=400)
         # Closing the figure
         plt.close()
 

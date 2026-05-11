@@ -16,7 +16,7 @@ from tqdm import tqdm
 from src.desiqso.analysis.absorption_masks import compute_h2_absorption_masks
 from src.desiqso.analysis.cross_correlation import run_cross_correlation_analysis
 from src.desiqso.analysis.mocks_spectra import (sample_completeness_analysis, mock_spectra_statistics,)
-from src.desiqso.config import RESULTS_FOLDER, settings, SNR_THRESHOLD
+from src.desiqso.config import (RESULTS_FOLDER, settings, SNR_THRESHOLD, REDSHIFT_RANGE,)
 from src.desiqso.constants import (DESI_RESOLUTION_POWER, Categories, ColNames, Modes,)
 from src.desiqso.data.loader import load_spectrum_from_filename
 from src.desiqso.models.dataset import AnalysisResults
@@ -52,7 +52,7 @@ def create_mock_spectra_sample(profile_to_add : Profile, folder : str) -> tuple[
     # Loading the cross-correlation analysis results
     AnalysisResults.reload(verbose=False)
     # Retrieving the table corresponding to the spectra with high SNR and with low chances of having H₂
-    table = AnalysisResults.results_survey(mode=Modes.ALL, profile_name="best", thresholds_dict={ColNames.SNR : (15, None),})
+    table = AnalysisResults.results_survey(mode=Modes.ALL, profile_name="best", thresholds_dict={ColNames.SNR : (15, None), ColNames.QSO_Z : (REDSHIFT_RANGE[0], None)})
     # Selecting only spectra that are not from the "confirmed", "borderline" or "rejected" categories
     table = table[table[ColNames.CATEGORY].isin([Categories.OTHER, Categories.REJECTED])]
     # List of the filenames of the spectra selected
@@ -190,7 +190,7 @@ def create_mock_spectra_sample(profile_to_add : Profile, folder : str) -> tuple[
     return mock_spectra, true_mock_spectra
 
 # Function to perform the complete mock analysis for a given total column density
-def completeness_analysis(mock_spectra : np.ndarray[SpectrumRecord], true_mock_spectra : dict[str, SpectrumRecord], folder : str, profile_to_fit : Profile) -> tuple[dict[int, float], dict[int, float], dict[int, float], dict[int, float]]:
+def completeness_analysis(mock_spectra : np.ndarray[SpectrumRecord], true_mock_spectra : dict[str, SpectrumRecord], folder : str, profile_added : Profile, profile_to_fit : Profile) -> tuple[dict[int, float], dict[int, float], dict[int, float], dict[int, float]]:
     """
     This function performs the cross-correlation analysis of the mock spectra 
     sample, plots the statistics of the mock spectra used for the analysis, 
@@ -205,6 +205,8 @@ def completeness_analysis(mock_spectra : np.ndarray[SpectrumRecord], true_mock_s
     :type true_mock_spectra: dict[str, SpectrumRecord]
     :param folder: Output folder
     :type folder: str
+    :param profile_added: Profile added to the mock spectra
+    :type profile_added: Profile
     :param profile_to_fit: Profile to fit
     :type profile_to_fit: Profile
     :return tuple[dict[int, float], dict[int, float], dict[int, float], dict[int, float]]: 
@@ -225,7 +227,7 @@ def completeness_analysis(mock_spectra : np.ndarray[SpectrumRecord], true_mock_s
     mock_spectra_statistics(mock_spectra=true_mock_spectra, profile_to_fit=profile_to_fit, output_folder=f"{folder}threshold_analysis/")
     
     # Calling the function to perform the sample completeness and purity analysis
-    sample_completeness_analysis(true_mock_spectra, f"{folder}threshold_analysis/", [ColNames.CORR_PARAM, ColNames.CORR_COEFF, ColNames.CORE_TRANS])
+    sample_completeness_analysis(true_mock_spectra, f"{folder}threshold_analysis/", profile_added, profile_to_fit)
 
     # Compute the completeness and purity of the analysis for different SNR
     true_positives, false_positives, true_negatives, false_negatives = snr_sample_completeness(true_mock_spectra)
@@ -313,9 +315,10 @@ def plot_completeness_purity(all_true_positives : list[dict[int, float]], all_fa
     # Computing the completenesses and purities from the values
     completenesses = [{snr : (all_true_positives[i][snr] / (all_true_positives[i][snr] + all_true_negatives[i][snr])) for snr in all_true_positives[i].keys()} for i in range(len(all_true_positives))]
     purities = [{snr : (1 - (all_false_positives[i][snr] / (all_true_positives[i][snr] + all_false_positives[i][snr]))) for snr in all_true_positives[i].keys()} for i in range(len(all_true_positives))]
+    false_detection_rates = [{snr : (all_false_positives[i][snr] / (all_false_positives[i][snr] + all_false_negatives[i][snr])) for snr in all_true_positives[i].keys()} for i in range(len(all_true_positives))]
 
     # Loop over completenesses and purities
-    for key, values_list in {"Completeness" : completenesses, "Purity" : purities}.items():
+    for key, values_list in {"Completeness" : completenesses, "Purity" : purities, "False detection rate" : false_detection_rates}.items():
 
         # Creating the figure and axis
         _, ax = plt.subplots(figsize=(12,8))
@@ -340,18 +343,18 @@ def plot_completeness_purity(all_true_positives : list[dict[int, float]], all_fa
         plt.grid(alpha=0.3)
 
         # Saving the plot
-        plt.savefig(f"{folder}{key.lower()}_vs_total-col-density.png")
+        plt.savefig(f"{folder}{"-".join(key.lower().split(" "))}_vs_total-col-density.png")
         plt.close()
     
     # Saving the results of the analysis in the dedicated file
     with open(f"{folder}completeness_purity_analysis.txt", "w") as file:
         # Writing the header
-        file.write("\t".join(["log(N)", "SNR", "True positives", "True negatives", "False positives", "False negatives", "Completeness (%)", "Purity (%)"]) + "\n")
+        file.write("\t".join(["log(N)", "SNR", "True positives", "True negatives", "False positives", "False negatives", "Completeness (%)", "Purity (%)", "False detection rate (%)"]) + "\n")
         # Looping over the total column densities
         for i in range(len(total_column_densities)):
             # Looping over the SNR values
             for snr in completenesses[0].keys():
-                file.write(f"{log10(total_column_densities[i])}\t{snr}\t{all_true_positives[i][snr]}\t{all_true_negatives[i][snr]}\t{all_false_positives[i][snr]}\t{all_false_negatives[i][snr]}\t{completenesses[i][snr]*100}\t{purities[i][snr]*100}\n")
+                file.write(f"{log10(total_column_densities[i])}\t{snr}\t{all_true_positives[i][snr]}\t{all_true_negatives[i][snr]}\t{all_false_positives[i][snr]}\t{all_false_negatives[i][snr]}\t{completenesses[i][snr]*100}\t{purities[i][snr]*100}\t{false_detection_rates[i][snr]*100}\n")
 
     # Returning to the main function
     return
@@ -435,7 +438,7 @@ def run_completeness_analysis(profile_to_fit : Profile) -> None:
             print(f"\n[INFO] Loaded {len(mock_spectra)} mock spectra sample from {subfolder}, with {len(true_mock_spectra)} real mock spectra.")
 
         # Calling the function to perform the completeness analysis on the sample of mock spectra
-        true_positives, false_positives, true_negatives, false_negatives = completeness_analysis(mock_spectra, true_mock_spectra, subfolder, profile_to_fit)
+        true_positives, false_positives, true_negatives, false_negatives = completeness_analysis(mock_spectra, true_mock_spectra, subfolder, profile_to_add, profile_to_fit)
 
         # Appending the samples of true positives, false positives, true negatives and false negatives to their respective lists
         all_true_positives.append(true_positives)
