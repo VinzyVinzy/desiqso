@@ -125,7 +125,7 @@ def download_preliminary_spectra() -> None:
     # If the results of the preliminary analysis are available
     if os.path.exists(PRELIMINARY_DATA_PATH):
         # Loading preliminary analysis results as arrays for faster access
-        tables_dict["borderline_candidates"] = pd.read_csv(PRELIMINARY_DATA_PATH+"borderline_candidates.txt", sep=r"\s+", header=None, names=["File Name", "Name", "RA (deg)", "DEC (deg)", "Redshift", "Best fit redshift", "Best fit correlation value", "Best fit correlation probability (log10)", "Best fit core transmission", "SNR"])
+        tables_dict["unsure_candidates"] = pd.read_csv(PRELIMINARY_DATA_PATH+"unsure_candidates.txt", sep=r"\s+", header=None, names=["File Name", "Name", "RA (deg)", "DEC (deg)", "Redshift", "Best fit redshift", "Best fit correlation value", "Best fit correlation probability (log10)", "Best fit core transmission", "SNR"])
         tables_dict["confirmed_candidates"]  = pd.read_csv(PRELIMINARY_DATA_PATH+"confirmed_candidates.txt", sep=r"\s+", header=None, names=["File Name", "Name", "RA (deg)", "DEC (deg)", "Redshift", "Best fit redshift", "Best fit correlation value", "Best fit correlation probability (log10)", "Best fit core transmission", "SNR", "#"])
         tables_dict["rejected_candidates"]   = pd.read_csv(PRELIMINARY_DATA_PATH+"rejected_candidates.txt", sep=r"\s+", header=None, names=["File Name", "Name", "RA (deg)", "DEC (deg)", "Redshift", "Best fit redshift",	"Best fit correlation value", "Best fit correlation probability (log10)", "Best fit core transmission", "SNR", "#"])
     

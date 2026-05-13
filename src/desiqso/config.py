@@ -91,8 +91,11 @@ FIGURES_FOLDER = "outputs/figures/"
 # Path to the folder containing the results
 RESULTS_FOLDER = "outputs/Ntot-20_J-0-1_main-run_all/"
 
-# Path to the folder containing the spectra data
+# Path to the folder containing the preliminary analysis results
 PRELIMINARY_DATA_PATH = "data/raw/preliminary/"
+
+# Path to the folder containing the visual inspection results
+VISUAL_INSPECTION_PATH = "data/raw/visual_inspection/"
 
 # Path to the spectra data folder
 SPECTRA_DATA_FOLDER = "data/raw/spectra/"

@@ -12,9 +12,9 @@ if __name__ == "__main__":
 
     # Defining the pairs of statistics to plot
     plot_pairs = [
-#        (ColNames.SNR, ColNames.CORR_PARAM),
+        (ColNames.SNR, ColNames.CORR_PARAM),
         (ColNames.QSO_Z, ColNames.CORR_PARAM),
-#        (ColNames.GRADE, ColNames.CORR_PARAM),
+        (ColNames.GRADE, ColNames.CORR_PARAM),
         (ColNames.CORR_COEFF, ColNames.CORE_TRANS),
         (ColNames.QSO_Z, ColNames.SNR),
         (ColNames.QSO_Z, ColNames.CNR),
@@ -29,13 +29,13 @@ if __name__ == "__main__":
         ColNames.CORE_TRANS :   (None, None),
         ColNames.CORR_COEFF :   (None, None),
         ColNames.CORR_PARAM :   (None, None),
-        ColNames.QSO_Z      :   (2.6, None),
+        ColNames.QSO_Z      :   (None, None),
         ColNames.Z          :   (None, None),
-        ColNames.SNR        :   (3.0, None),
+        ColNames.SNR        :   (None, None),
         ColNames.CNR        :   (None, None),
         ColNames.GRADE      :   (None, None),
         ColNames.REL_SPEED  :   (None, None),
     }
 
     # Calling function to plot the statistics of the analysis results
-    plot_statistics(plot_pairs, thresholds, color_col=ColNames.QSO_Z, mode=Modes.ALL)
+    plot_statistics(plot_pairs, thresholds, color_col=ColNames.QSO_Z, mode=Modes.VISUAL)

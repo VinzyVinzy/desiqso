@@ -53,7 +53,7 @@ def create_mock_spectra_sample(profile_to_add : Profile, folder : str) -> tuple[
     AnalysisResults.reload(verbose=False)
     # Retrieving the table corresponding to the spectra with high SNR and with low chances of having H₂
     table = AnalysisResults.results_survey(mode=Modes.ALL, profile_name="best", thresholds_dict={ColNames.SNR : (15, None), ColNames.QSO_Z : (REDSHIFT_RANGE[0], None)})
-    # Selecting only spectra that are not from the "confirmed", "borderline" or "rejected" categories
+    # Selecting only spectra that are not from the "confirmed" or "unsure" categories
     table = table[table[ColNames.CATEGORY].isin([Categories.OTHER, Categories.REJECTED])]
     # List of the filenames of the spectra selected
     filenames = table[ColNames.FILENAME].tolist()

@@ -27,10 +27,10 @@ class Categories(StrEnum):
     This class contains the categories names used in the code.
     """
 
-    CONFIRMED   = "confirmed"
-    BORDERLINE  = "borderline"
-    REJECTED    = "rejected"
-    OTHER       = "other"
+    CONFIRMED = "confirmed"
+    UNSURE    = "unsure"
+    REJECTED  = "rejected"
+    OTHER     = "other"
 
 # Enumeration of column names to prevent typos
 class ColNames(StrEnum):
@@ -87,12 +87,13 @@ class Modes(StrEnum):
     RANDOM      = "random"
     VALID       = "valid"
     NEW         = "new"
-    PRELIMINARY = "preliminary"
+    VISUAL      = "visual"
     CONFIRMED   = Categories.CONFIRMED
     REJECTED    = Categories.REJECTED
-    BORDERLINE  = Categories.BORDERLINE
+    UNSURE      = Categories.UNSURE
     OTHER       = Categories.OTHER
     SAMPLE      = "sample"
+    CANDIDATES  = "candidates"
 
-# List of analysis modes associated with preliminary analysis
-PREL_LIST = {Modes.CONFIRMED, Modes.BORDERLINE, Modes.REJECTED}
+# List of analysis modes associated with visual inspection
+VISUAL_LIST = {Modes.CONFIRMED, Modes.UNSURE, Modes.REJECTED}

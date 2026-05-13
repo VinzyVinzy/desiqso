@@ -1,6 +1,6 @@
 """
 This module contains the functions to plot the initial sample statistics for each category of spectra, 
-using the associated colors for each category (confirmed, borderline, rejected and other), and displaying 
+using the associated colors for each category (confirmed, unsure, rejected and other), and displaying 
 the number of spectra used for each category in the plot. It also adds a vertical line to indicate the t
 hreshold for the correlation parameter if the column plotted is the correlation parameter.
 """
@@ -26,16 +26,16 @@ from src.desiqso.utils.helpers import compute_column_weights
 
 # Defining the colors for each category
 colors = {
-    Categories.CONFIRMED :    "green", 
-    Categories.BORDERLINE:    "orange", 
-    Categories.REJECTED  :    "red", 
-    Categories.OTHER     :    "blue",
+    Categories.CONFIRMED:    "green", 
+    Categories.UNSURE   :    "orange", 
+    Categories.REJECTED :    "red", 
+    Categories.OTHER    :    "blue",
 }
 
 # Defining the bins for the histograms of each column
 bins = {
     ColNames.SNR        : np.arange(0, 50.25, 0.25),
-    ColNames.CONTINUUM  : np.arange(0, 10.5, 0.5),
+    ColNames.CNR        : np.arange(0, 10.5, 0.5),
     ColNames.QSO_Z      : np.arange(2.5, 6.05, 0.05),
     ColNames.Z          : np.arange(2.5, 6.05, 0.05),
     ColNames.RA         : np.arange(0, 370, 10),
@@ -51,17 +51,15 @@ bins = {
 y_pos_dict = {
     Categories.OTHER     :    0.95, 
     Categories.CONFIRMED :    0.90, 
-    Categories.BORDERLINE:    0.85, 
+    Categories.UNSURE:    0.85, 
     Categories.REJECTED  :    0.80,
 }
-
-
 
 # Function to plot the initial sample statistics
 def plot_sample_statistics() -> None:
     """
     This function plots the initial sample statistics for each category of spectra, using the 
-    associated colors for each category (confirmed, borderline, rejected and other), and 
+    associated colors for each category (confirmed, unsure, rejected and other), and 
     displaying the number of spectra used for each category in the plot. It also adds a vertical 
     line to indicate the threshold for the correlation parameter if the column plotted is the 
     correlation parameter.
@@ -93,31 +91,36 @@ def plot_sample_statistics() -> None:
     valid_table      = AnalysisResults.results_survey(Modes.VALID, "best", {})
     confirmed_table  = AnalysisResults.results_survey(Modes.CONFIRMED, "best", {})
     rejected_table   = AnalysisResults.results_survey(Modes.REJECTED, "best", {})
+    other_table      = AnalysisResults.results_survey(Modes.OTHER, "best", {})
     new_table        = AnalysisResults.results_survey(Modes.NEW, "best", {})
 
 
     # Defining the dictionary of the tables to plot for each category of spectra
     table_dict = {
-        "Low SNR"        : low_snr_table,
-        "Failed"         : failed_table,
-        "Successful"     : successful_table,
-        "Valid"          : valid_table,
-        "Confirmed"      : confirmed_table,
-        "Rejected"       : rejected_table,
-        "SNR Range"      : successful_table,
-        "New Candidates" : new_table,
+#        "Low SNR"        : low_snr_table,
+#        "Failed"         : failed_table,
+#        "Successful"     : successful_table,
+#        "Valid"          : valid_table,
+#        "Confirmed"      : confirmed_table,
+#        "Rejected"       : rejected_table,
+#        "Other"          : other_table,
+#        "SNR Range"      : successful_table,
+#        "New Candidates" : new_table,
+        "All"            : successful_table,
     }
 
     # Defining the dictionary of the columns to plot for each category of spectra
     cols_dict = {
-        "Low SNR"       : [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z,             ColNames.RA, ColNames.DEC,],
-        "Failed"        : [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z,             ColNames.RA, ColNames.DEC,],
-        "Successful"    : [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
-        "Confirmed"     : [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
-        "Rejected"      : [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
-        "Valid"         : [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
-        "SNR Range"     : [ColNames.SNR,                     ColNames.QSO_Z,             ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE,],
-        "New Candidates": [ColNames.SNR, ColNames.CONTINUUM, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Low SNR"       : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z,             ColNames.RA, ColNames.DEC,],
+        "Failed"        : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z,             ColNames.RA, ColNames.DEC,],
+        "Successful"    : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Confirmed"     : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Other"         : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Rejected"      : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Valid"         : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "SNR Range"     : [ColNames.SNR,               ColNames.QSO_Z,             ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE,],
+        "New Candidates": [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "All"           : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
     }
 
     # ================================

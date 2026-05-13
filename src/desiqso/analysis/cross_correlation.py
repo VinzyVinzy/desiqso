@@ -25,7 +25,7 @@ import warnings
 # Local imports
 from src.desiqso.analysis.absorption_masks import compute_h2_absorption_masks
 from src.desiqso.config import (SNR_THRESHOLD, VELOCITY_RANGE, NUM_REDSHIFT_VALUES, PLOT_CORRELATION_COEFFICIENTS, MULTIPLY_BY_CONTINUUM, PLOT_2D_DISTRIBUTION, SPECTRA_DATA_FOLDER, CROSS_CORRELATION_RESULTS_FOLDER)
-from src.desiqso.constants import (H2_LYMAN_WERNER_BANDS, NUMBER_OF_BANDS, C_KMS, ColNames, Modes, PREL_LIST)
+from src.desiqso.constants import (H2_LYMAN_WERNER_BANDS, NUMBER_OF_BANDS, C_KMS, ColNames, Modes, VISUAL_LIST)
 from src.desiqso.models.dataset import AnalysisResults
 from src.desiqso.models.profile import (ProfileManager, Profile,)
 from src.desiqso.models.results import CrossCorrelationResult
@@ -125,9 +125,9 @@ def select_spectra_for_analysis(mode:str = Modes.ALL) -> list :
 
     - If mode is "all", it returns all the downloaded spectra.
     - If mode is "random", it returns a random sample of 20000 spectra from the downloaded spectra.
-    - If mode is "preliminary", "confirmed", "borderline" or "rejected", it returns the corresponding respective data group from the preliminary analysis results.
+    - If mode is "preliminary", "confirmed", "unsure" or "rejected", it returns the corresponding respective data group from the preliminary analysis results.
 
-    :param mode: Mode of selection. Can be "all", "random", "preliminary", "confirmed", "borderline" or 
+    :param mode: Mode of selection. Can be "all", "random", "preliminary", "confirmed", "unsure" or 
     "rejected".
     :type mode: str
     
@@ -143,8 +143,8 @@ def select_spectra_for_analysis(mode:str = Modes.ALL) -> list :
     elif mode == Modes.RANDOM:
         spectra_files = random.sample([file for file in os.listdir(SPECTRA_DATA_FOLDER) if file.endswith(".fits")], 10000)
     
-    # If the mode is "preliminary", "confirmed", "borderline" or "rejected"
-    elif mode in PREL_LIST:
+    # If the mode is "preliminary", "confirmed", "unsure" or "rejected"
+    elif mode in VISUAL_LIST:
         # Load preliminary analysis results
         AnalysisResults.load_preliminary_results()
         # Define data groups using preliminary analysis
@@ -154,7 +154,7 @@ def select_spectra_for_analysis(mode:str = Modes.ALL) -> list :
         # Load preliminary analysis results
         AnalysisResults.load_preliminary_results()
         # Define data groups using preliminary analysis
-        spectra_files = set(AnalysisResults._preliminary_results["confirmed_candidates"][ColNames.FILENAME]) | set(AnalysisResults._preliminary_results["borderline_candidates"][ColNames.FILENAME]) | set(AnalysisResults._preliminary_results["rejected_candidates"][ColNames.FILENAME])
+        spectra_files = set(AnalysisResults._preliminary_results["confirmed_candidates"][ColNames.FILENAME]) | set(AnalysisResults._preliminary_results["unsure_candidates"][ColNames.FILENAME]) | set(AnalysisResults._preliminary_results["rejected_candidates"][ColNames.FILENAME])
 
     elif mode == Modes.SAMPLE:
         # Load preliminary analysis results

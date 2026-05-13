@@ -4,7 +4,6 @@ This module contains functions to find and save new candidates in a file.
 
 # Packages import
 import os
-import pandas as pd
 from tqdm import tqdm
 
 # Local import
@@ -27,16 +26,16 @@ def find_new_candidates() -> None :
     # Loading all the synthetic profiles
     ProfileManager.load_all(verbose=False)
 
-    # Loading preliminary analysis results in a single table
-    preliminary_table = pd.concat((AnalysisResults._preliminary_results["confirmed_candidates"], AnalysisResults._preliminary_results["borderline_candidates"], AnalysisResults._preliminary_results["rejected_candidates"]))
+    # Loading visual inspection results in a single table
+    visual_table = AnalysisResults._visual_inspection
 
     # Loading the results of the cross-correlation analysis
     table = AnalysisResults.results_survey(mode = Modes.VALID, profile_name="all", thresholds_dict={},)
 
     # Looping over the table to find new candidates
     for _, row in tqdm(table.iterrows(), total=len(table), desc=f"Saving new candidates", unit="spectra"):
-        # If the candidate is not in the preliminary analysis results table
-        if row[ColNames.FILENAME] not in preliminary_table[ColNames.FILENAME].values:
+        # If the candidate is not in the visual inspection results table
+        if row[ColNames.FILENAME] not in visual_table[ColNames.FILENAME].values:
             # Saving the new candidate
             save_new_candidate(row[ColNames.FILENAME], row[ColNames.PROFILE], row[ColNames.GRADE])
     

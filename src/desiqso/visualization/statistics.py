@@ -48,7 +48,7 @@ plot_sizes = {
 # Defining the alpha value for each group
 alphas = {
     Categories.CONFIRMED : 1.0,
-    Categories.BORDERLINE: .90,
+    Categories.UNSURE    : .90,
     Categories.REJECTED  : .75,
     Categories.OTHER     : .50,
 }
@@ -56,21 +56,21 @@ alphas = {
 # Defining the markers for each group
 markers = {
     Categories.CONFIRMED : "o",
-    Categories.BORDERLINE: "v",
+    Categories.UNSURE    : "v",
     Categories.REJECTED  : "X",
     Categories.OTHER     : "s"
 }
 # Defining the markers size for each group
 sizes = {
     Categories.CONFIRMED : 80,
-    Categories.BORDERLINE: 50,
+    Categories.UNSURE    : 50,
     Categories.REJECTED  : 50,
     Categories.OTHER     : 20
 }
 # Defining the edgecolors for each group
 edgecolors = {
     Categories.CONFIRMED : "red",
-    Categories.BORDERLINE: "none",
+    Categories.UNSURE    : "orange",
     Categories.REJECTED  : "none",
     Categories.OTHER     : "none"
 }
@@ -457,7 +457,7 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
             # Defining the marker legend
             marker_legend = [Line2D([0], [0], marker=marker, color="black", linestyle="None", markersize=8, label=f"{group}", markeredgecolor=edgecolors[group], linewidth=1.,) for group, marker in markers.items()]
             # Adding the legend to the plot
-            plt.legend(handles=marker_legend, title="Groups", loc="upper right")
+            plt.legend(handles=marker_legend, title="Categories", loc="upper right")
 
         # Setting the plot limits
         plt.xlim(plot_sizes[x_key][0], plot_sizes[x_key][1])
@@ -612,7 +612,7 @@ def plot_scatter(data : pd.DataFrame, x_key : str, y_key : str, color_col : str,
     """
 
     # Ordering the categories for a better visualization
-    categories = [Categories.OTHER, Categories.REJECTED, Categories.BORDERLINE, Categories.CONFIRMED]
+    categories = [Categories.OTHER, Categories.REJECTED, Categories.UNSURE, Categories.CONFIRMED]
 
     # Dictionnary for the colormap values
     colormap_values = {ColNames.GRADE : [0.0, 6.0], ColNames.QSO_Z : [2.5, 6.0], ColNames.SNR : [1.5, 15.0], ColNames.CNR : [0.5, 15.0]}

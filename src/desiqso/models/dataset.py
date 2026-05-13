@@ -9,8 +9,8 @@ import os
 import pandas as pd
 
 # Local imports
-from src.desiqso.config import (PRELIMINARY_DATA_PATH, CROSS_CORRELATION_RESULTS_FOLDER, NEW_CANDIDATES_PATH, EXPECTED_CORE_TRANSMISSIONS_PATH, SNR_THRESHOLD,)
-from src.desiqso.constants import (Categories, ColNames, Modes, PREL_LIST,)
+from src.desiqso.config import (PRELIMINARY_DATA_PATH, VISUAL_INSPECTION_PATH, CROSS_CORRELATION_RESULTS_FOLDER, NEW_CANDIDATES_PATH, EXPECTED_CORE_TRANSMISSIONS_PATH, SNR_THRESHOLD,)
+from src.desiqso.constants import (Categories, ColNames, Modes, VISUAL_LIST,)
 from src.desiqso.utils.helpers import (parse_cell, compute_grade, compute_relative_speed, _is_valid,)
 
 # Class to store the results of the cross-correlation analysis
@@ -34,6 +34,8 @@ class AnalysisResults:
 
     # Class attribute to store the analysis results
     _results : pd.DataFrame = None
+    # Class attribute to store the visual inspection results
+    _visual_inspection : pd.DataFrame = None
     # Class attribute to store another analysis results
     _preliminary_results : dict[str, pd.DataFrame] = None
     # Class attribute to store the expected core transmissions
@@ -66,6 +68,8 @@ class AnalysisResults:
             print("\n[INFO] Loading preliminary analysis results...")
         # Loading preliminary analysis results from local files
         cls.load_preliminary_results(verbose=verbose)
+        # Loading visual inspection results from local files
+        cls.load_visual_inspection_results(verbose=verbose)
 
         # Initialize class attributes
         cls._results             : pd.DataFrame     = None
@@ -178,13 +182,35 @@ class AnalysisResults:
         if os.path.exists(PRELIMINARY_DATA_PATH):
             # Loading preliminary analysis results as arrays for faster access
             col_names = [ColNames.FILENAME, ColNames.NAME, ColNames.RA, ColNames.DEC, ColNames.QSO_Z, ColNames.Z, ColNames.CORR_COEFF, ColNames.CORR_PROB, ColNames.CORE_TRANS, ColNames.SNR]
-            cls._preliminary_results["borderline_candidates"] = pd.read_csv(PRELIMINARY_DATA_PATH+"borderline_candidates.txt", sep=r"\s+", header=None, names=col_names)
+            cls._preliminary_results["unsure_candidates"] = pd.read_csv(PRELIMINARY_DATA_PATH+"unsure_candidates.txt", sep=r"\s+", header=None, names=col_names)
             cls._preliminary_results["confirmed_candidates"]  = pd.read_csv(PRELIMINARY_DATA_PATH+"confirmed_candidates.txt", sep=r"\s+", header=None, names=col_names+["#"])
             cls._preliminary_results["rejected_candidates"]   = pd.read_csv(PRELIMINARY_DATA_PATH+"rejected_candidates.txt", sep=r"\s+", header=None, names=col_names+["#"])
             
         # Inform user
         if verbose:
             print("[INFO] Preliminary analysis results loaded.\n")
+
+        # Return to the main programm
+        return
+
+    # Class method to load the results of the visual inspection
+    @classmethod
+    def load_visual_inspection_results(cls, verbose : bool = True) -> None:
+        """Class method to load the results of the visual inspection from a local file.
+        
+        The function first checks if the visual inspection results are already loaded to save time.
+        :type verbose: bool
+        """
+        # If the results of the visual inspection are available
+        if os.path.exists(VISUAL_INSPECTION_PATH):
+            # Defining the columns names
+            col_names = [ColNames.FILENAME, ColNames.CATEGORY]
+            # Reading the file
+            cls._visual_inspection = pd.read_csv(f"{VISUAL_INSPECTION_PATH}selection.dat", sep=r"\s+", header=None, names=col_names)
+
+        # Inform user
+        if verbose:
+            print("[INFO] Visual inspection results loaded.\n")
 
         # Return to the main programm
         return
@@ -275,18 +301,20 @@ class AnalysisResults:
             table = table[table[ColNames.PROFILE] == profile_name]
 
         # Retrieving mask corresponding to the category selected
-        if mode in PREL_LIST:
+        if mode in VISUAL_LIST:
             table = table[table[ColNames.CATEGORY] == mode]
         elif mode == Modes.NEW:
             table = table[table[ColNames.FILENAME].isin(set(cls._candidates.keys()))]
-        elif mode == Modes.PRELIMINARY:
-            table = table[table[ColNames.CATEGORY].isin(PREL_LIST)]
+        elif mode == Modes.VISUAL:
+            table = table[table[ColNames.CATEGORY].isin(VISUAL_LIST)]
         elif mode == Modes.RANDOM:
             table = table.sample(n=100, axis=1)
         elif mode == Modes.OTHER:
             table = table[table[ColNames.CATEGORY] == Categories.OTHER]
         elif mode == Modes.VALID:
             table = table[table[ColNames.IS_VALID] == 1]
+        elif mode == Modes.CANDIDATES:
+            table = table[table[ColNames.CATEGORY].isin([Categories.CONFIRMED, Categories.UNSURE])]
 
         # Initialize mask
         mask = pd.Series(True, index=table.index)
@@ -336,7 +364,30 @@ class AnalysisResults:
 # Utility function to identify the category (data group) of a spectrum
 def which_data_group(filename: str) -> str:
         """
-        Identify the category (data group) of a spectrum.
+        Identify the category (data group) of a spectrum using the visual inspection results.
+
+        :param filename: The name of the spectrum file.
+        :type filename: str
+
+        :return: The category (data group) of the spectrum.
+        :rtype: str
         """
-        # Retrurn the category
-        return Categories.CONFIRMED if filename in set(AnalysisResults._preliminary_results["confirmed_candidates"][ColNames.FILENAME]) else (Categories.BORDERLINE if filename in set(AnalysisResults._preliminary_results["borderline_candidates"][ColNames.FILENAME]) else (Categories.REJECTED if filename in set(AnalysisResults._preliminary_results["rejected_candidates"][ColNames.FILENAME]) else Categories.OTHER))
+        # Retrieve the row corresponding to the filename passed as argument
+        row = AnalysisResults._visual_inspection[AnalysisResults._visual_inspection[ColNames.FILENAME] == filename]
+
+        # If the row is empty, return "OTHER"
+        if row.empty:
+            return Categories.OTHER
+
+        # Associating the category (data group) to the spectrum
+        match row[ColNames.CATEGORY].iloc[0]:
+            # If the spectrum is confirmed
+            case "SELECT":
+                return Categories.CONFIRMED
+            # If the spectrum is unsure
+            case "UNSURE":
+                return Categories.UNSURE
+            # If the spectrum is rejected
+            case "REJECT":
+                return Categories.REJECTED
+            
