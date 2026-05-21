@@ -1,4 +1,12 @@
-""""""
+"""
+This module contains the entry point for the `export-results` command, which is responsible for 
+exporting the analysis results to a CSV file. The exported results are filtered based on specified 
+thresholds for various parameters, such as correlation probability, core transition, correlation 
+coefficient, correlation parameter, quasar redshift, absorber redshift, signal-to-noise ratio, 
+continuum-to-noise ratio, grade, and relative speed. 
+
+The exported file can be used for further analysis or sharing with collaborators.
+"""
 
 # Local imports
 from src.desiqso.config import EXPORTED_LISTS_FOLDER

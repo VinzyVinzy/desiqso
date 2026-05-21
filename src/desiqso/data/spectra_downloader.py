@@ -71,7 +71,7 @@ def retrieve_spectra_from_database(ra_list : list[int]) -> None:
         # Fields to retrieve using the IDs found
         fields = ["desiname",   "ra",             "dec",              "sparcl_id",    "specid",   "flux",
                   "wavelength", "ivar",           "data_release",     "spectype",     "redshift", "model",
-                  "chi2",       "redshift_err",   "redshift_warning", "mask",         "tsnr2_qso",]
+                  "chi2",       "redshift_err",   "redshift_warning", "mask",         "tsnr2_qso","targetid"]
         
         # Inform user
         tqdm.write(f"[INFO] Downloading {len(found.ids)} spectra for RA range [{ra_start}, {ra_end}]")

@@ -77,6 +77,34 @@ COLUMN_FILE_LABELS = {
     ColNames.REL_SPEED       : "rel-speed",
 }
 
+# Enumeration of column names for the magnitudes table to prevent typos
+class MagColNames(StrEnum):
+    """
+    This class contains the column names for the magnitudes table used in the code.
+    """
+
+    NAME        =   "Name"
+    TARGETID    =   "Target ID"
+    RA          =   "RA (deg)"
+    DEC         =   "DEC (deg)"
+    G_FLUX      =   "Legacy Survey g-band flux"
+    R_FLUX      =   "Legacy Survey r-band flux"
+    Z_FLUX      =   "Legacy Survey z-band flux"
+    MW_TRANS_G  =   "Legacy Survey g-band Milky Way transmission"
+    MW_TRANS_R  =   "Legacy Survey r-band Milky Way transmission"
+    MW_TRANS_Z  =   "Legacy Survey z-band Milky Way transmission"
+    W1_FLUX     =   "WISE W1 band flux"
+    W2_FLUX     =   "WISE W2 band flux"
+    W3_FLUX     =   "WISE W3 band flux"
+    W4_FLUX     =   "WISE W4 band flux"
+    MW_TRANS_W1 =   "WISE W1 band Milky Way transmission"
+    MW_TRANS_W2 =   "WISE W2 band Milky Way transmission"
+    MW_TRANS_W3 =   "WISE W3 band Milky Way transmission"
+    MW_TRANS_W4 =   "WISE W4 band Milky Way transmission"
+    GAIA_G_MAG  =   "Gaia g-band magnitude"
+    GAIA_BP_MAG =   "Gaia bp-band magnitude"
+    GAIA_RP_MAG =   "Gaia rp-band magnitude"
+
 # Enumeration of analysis modes to prevent typos
 class Modes(StrEnum):
     """

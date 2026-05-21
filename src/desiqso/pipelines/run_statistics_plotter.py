@@ -38,4 +38,4 @@ if __name__ == "__main__":
     }
 
     # Calling function to plot the statistics of the analysis results
-    plot_statistics(plot_pairs, thresholds, color_col=ColNames.QSO_Z, mode=Modes.VISUAL)
+    plot_statistics(plot_pairs, thresholds, color_col=ColNames.QSO_Z, mode=Modes.ALL)

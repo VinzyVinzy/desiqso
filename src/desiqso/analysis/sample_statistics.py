@@ -35,23 +35,23 @@ colors = {
 # Defining the bins for the histograms of each column
 bins = {
     ColNames.SNR        : np.arange(0, 50.25, 0.25),
-    ColNames.CNR        : np.arange(0, 10.5, 0.5),
+    ColNames.CNR        : np.arange(0, 10.5, 0.25),
     ColNames.QSO_Z      : np.arange(2.5, 6.05, 0.05),
     ColNames.Z          : np.arange(2.5, 6.05, 0.05),
     ColNames.RA         : np.arange(0, 370, 10),
     ColNames.DEC        : np.arange(-40, 95, 5),
-    ColNames.CORR_PARAM : np.arange(0., 1.025, 0.025),
+    ColNames.CORR_PARAM : np.arange(0., 1.00, 0.02),
     ColNames.CORR_COEFF : np.arange(-0.05, 1.025, 0.025),
     ColNames.CORE_TRANS : np.arange(-1., 1., 0.05),
     ColNames.GRADE      : np.arange(-0.5, 7.5, 1),
-    ColNames.REL_SPEED  : np.arange(-2600, 2600, 100),
+    ColNames.REL_SPEED  : np.arange(-2600, 2600, 200),
 }
 
 # Definig the y positions for the text displaying the number of spectra for each category in the histograms
 y_pos_dict = {
     Categories.OTHER     :    0.95, 
     Categories.CONFIRMED :    0.90, 
-    Categories.UNSURE:    0.85, 
+    Categories.UNSURE    :    0.85, 
     Categories.REJECTED  :    0.80,
 }
 
@@ -93,34 +93,47 @@ def plot_sample_statistics() -> None:
     rejected_table   = AnalysisResults.results_survey(Modes.REJECTED, "best", {})
     other_table      = AnalysisResults.results_survey(Modes.OTHER, "best", {})
     new_table        = AnalysisResults.results_survey(Modes.NEW, "best", {})
+    candidates_table = AnalysisResults.results_survey(Modes.CANDIDATES, "best", {})
+    parent_table     = AnalysisResults.results_survey(Modes.ALL, "best", {ColNames.SNR : (3.0, None), ColNames.QSO_Z : (2.6, None)})
+    visual_table     = AnalysisResults.results_survey(Modes.VISUAL, "best", {})
 
 
     # Defining the dictionary of the tables to plot for each category of spectra
     table_dict = {
-#        "Low SNR"        : low_snr_table,
-#        "Failed"         : failed_table,
-#        "Successful"     : successful_table,
-#        "Valid"          : valid_table,
-#        "Confirmed"      : confirmed_table,
-#        "Rejected"       : rejected_table,
-#        "Other"          : other_table,
-#        "SNR Range"      : successful_table,
-#        "New Candidates" : new_table,
-        "All"            : successful_table,
+#        "Low SNR"                    : low_snr_table,       # Plotting the spectra with SNR so low the analysis was not performed
+#        "Failed"                     : failed_table,        # Plotting the spectra that failed the analysis for various reasons
+#        "Successful"                 : successful_table,    # Plotting the spectra that passed the analysis with color coding for the categories
+#        "Valid"                      : valid_table,         # Plotting the valid spectra (that passed the analysis AND the CORR_PARAM threshold)
+#        "Confirmed"                  : confirmed_table,     # Plotting the confirmed candidates
+#        "Rejected"                   : rejected_table,      # Plotting the rejected candidates
+#        "Other"                      : other_table,         # Plotting the other candidates
+#        "SNR Range"                  : successful_table,    # Plotting the spectra that passed the analysis for various SNR thresholds
+#        "New Candidates"             : new_table,           # Plotting the valide spectra that were not visually inspected
+#        "All"                        : successful_table,    # Plotting all the spectra without any color coding for the categories
+#        "Candidates"                 : candidates_table,    # Plotting the spectra that were visually inspected and classified as confirmed or unsure
+#        "Visual"                     : visual_table,        # Plotting the spectra that were visually inspected
+        "Candidates VS Parent Sample": parent_table,        # Plotting all the spectra and color coding for the other vs H2 candidates spectra
+        "Candidates VS Rejected"     : visual_table,        # Plotting all the spectra and color coding for the rejected candidates vs H2 candidates spectra
+        "Visual Categories"          : visual_table,        # Plotting all the spectra that were visually inspected and color coding for the visual inspection categories
     }
 
     # Defining the dictionary of the columns to plot for each category of spectra
     cols_dict = {
-        "Low SNR"       : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z,             ColNames.RA, ColNames.DEC,],
-        "Failed"        : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z,             ColNames.RA, ColNames.DEC,],
-        "Successful"    : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
-        "Confirmed"     : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
-        "Other"         : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
-        "Rejected"      : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
-        "Valid"         : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
-        "SNR Range"     : [ColNames.SNR,               ColNames.QSO_Z,             ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE,],
-        "New Candidates": [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
-        "All"           : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Low SNR"                    : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z,             ColNames.RA, ColNames.DEC,],
+        "Failed"                     : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z,             ColNames.RA, ColNames.DEC,],
+        "Successful"                 : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Confirmed"                  : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Other"                      : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Rejected"                   : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Valid"                      : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "SNR Range"                  : [ColNames.SNR,               ColNames.QSO_Z,             ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE,],
+        "New Candidates"             : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "All"                        : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Candidates"                 : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Visual"                     : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Candidates VS Parent Sample": [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Candidates VS Rejected"     : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
+        "Visual Categories"          : [ColNames.SNR, ColNames.CNR, ColNames.QSO_Z, ColNames.Z, ColNames.RA, ColNames.DEC, ColNames.CORR_COEFF, ColNames.CORR_PARAM, ColNames.CORE_TRANS, ColNames.GRADE, ColNames.REL_SPEED,],
     }
 
     # ================================
@@ -140,14 +153,24 @@ def plot_sample_statistics() -> None:
             match key:
                 
                 # For the successful and valid spectra, plotting the histogram with the associated categories colors
-                case "Successful" | "Valid":
+                case "Successful" | "Valid" | "Visual Categories":
                     # Plotting the histogram with the associated categories colors
                     plot_sample_statistics_categories(table, col, ax)
 
-                # For the spectra with low SNR, plotting the histogram with the associated threshold for the SNR
+                # For the successful spectra, plotting the histogram with the associated threshold for the SNR to measure its effect
                 case "SNR Range":
                     # Plotting the histogram with the associated function
                     plot_sample_statistics_threshold(table, col, 3., ColNames.SNR, ax)
+                
+                # For the H2 candidates, plotting their distributions with regard to the rest of the spectra
+                case "Candidates VS Parent Sample":
+                    # Plotting the histogram with the associated function
+                    plot_sample_statistics_candidates_vs_parent(table, col, ax)
+
+                # For the H2 candidates, plotting their distributions with regard to the rejected candidates spectra
+                case "Candidates VS Rejected":
+                    # Plotting the histogram with the associated function
+                    plot_sample_statistics_candidates_vs_rejected(table, col, ax)
 
                 # For all the other categories
                 case _:
@@ -155,15 +178,17 @@ def plot_sample_statistics() -> None:
                     plot_sample_statistics_standard(table, col, ax)
             
             # Setting the labels and title of the plot
-            plt.xlabel(col)
-            plt.ylabel("Percentage of total spectra")
+            ax.set_xlabel(col)
+            if key != "Candidates VS Parent Sample" :
+                plt.ylabel("Percentage of total spectra")
             plt.title(f"Distribution of {col} for {key} spectra")
 
             # Setting the x-axis limits to better visualize the distribution
             plt.xlim(bins[col][0], bins[col][-1])
 
             # Setting the y-axis to display the percentage instead of the fraction
-            ax.yaxis.set_major_formatter(PercentFormatter(xmax=1))
+            if key != "Candidates VS Parent Sample":
+                ax.yaxis.set_major_formatter(PercentFormatter(xmax=1))
 
             # Adding a vertical line to indicate the threshold for the correlation parameter if the column is the correlation parameter
             if col == ColNames.CORR_PARAM:
@@ -251,6 +276,94 @@ def plot_sample_statistics_threshold(table : pd.DataFrame, col : str, threshold 
 
     # Adding the legend to the plot
     ax.legend(title=threshold_col, loc="upper left")
+
+    # Returning to the main function
+    return
+
+# Function to plot the histogram of a given column for each category of spectra in the given table
+def plot_sample_statistics_candidates_vs_parent(table: pd.DataFrame, col: str, ax: plt.Axes) -> None:
+    """
+    This function plots the histogram of the given column for each category of spectra in the given table,
+    using the associated colors for each category and displaying the number of spectra used for each category 
+    in the plot. The "candidate" category is defined as the combination of "confirmed" and "unsure" categories
+    while the "parent sample" category is defined as the combination of "other" and "rejected" categories 
+    respecting the selection criteria for visual inspection (SNR > 3.0 and z_qso > 2.6).
+
+    :param table: The table containing the spectra data to plot, with a column for the category
+    of each spectrum and a column for the values to plot.
+    :type table: pd.DataFrame
+    :param col: The name of the column to plot the histogram for.
+    :type col: str
+    :param ax: The `matplotlib` axis to plot the histogram on.
+    :type ax: plt.Axes
+    :returns None: This function does not return any value.
+    """
+
+    # Creating a second y-axis to plot the histogram of the parent sample with the count of spectra in each bin
+    ax2 = ax.twinx() 
+
+    # Selecting the part of the table with non-NaN values for the "negative" category and column to plot
+    other_table = table[table[ColNames.CATEGORY].isin([Categories.OTHER, Categories.REJECTED])].dropna(subset=[col])
+    # Plotting the histogram for the "negative" category and column with the associated color and label, using the weights to plot the fraction of spectra in each bin instead of the count
+    other_table[col].hist(bins=bins[col], ax=ax, label="parent sample", edgecolor=colors[Categories.OTHER], histtype='step', linewidth=2)
+    # Displaying the number of spectra used for the "negative" category and column
+    ax.text(0.85, 0.95, rf"N$_{{parent}}$ = {len(other_table)}", transform=ax.transAxes, fontsize=12, va='top')
+
+    # Selecting the part of the table with non-NaN values for the "candidate" category and column to plot
+    candidates_table = table[table[ColNames.CATEGORY].isin([Categories.CONFIRMED, Categories.UNSURE])].dropna(subset=[col])
+    # Plotting the histogram for the "candidate" category and column with the associated color and label, using the weights to plot the fraction of spectra in each bin instead of the count
+    candidates_table[col].hist(bins=bins[col], ax=ax2, label="candidates", edgecolor="green", histtype='step', linewidth=2)
+    # Displaying the number of spectra used for the "candidate" category and column
+    ax2.text(0.85, 0.90, rf"N$_{{candidates}}$ = {len(candidates_table)}", transform=ax2.transAxes, fontsize=12, va='top')
+
+    # Merge legends from both axes
+    handles1, labels1 = ax.get_legend_handles_labels()
+    handles2, labels2 = ax2.get_legend_handles_labels()
+    ax.legend(handles2 + handles1, labels2 + labels1, title=ColNames.CATEGORY, loc="upper left")
+
+    # Setting the y-axis labels for both axes
+    ax.set_ylabel("Number of spectra (Parent sample)")
+    ax2.set_ylabel("Number of spectra (Candidates)")
+
+    # Turning off the grid for the second y-axis to avoid overloading the plot
+    ax2.grid(False)
+
+    # Returning to the main function
+    return
+
+# Function to plot the histogram of a given column for each category of spectra in the given table
+def plot_sample_statistics_candidates_vs_rejected(table: pd.DataFrame, col: str, ax: plt.Axes) -> None:
+    """
+    This function plots the histogram of the given column for each category of spectra in the given table,
+    using the associated colors for each category and displaying the number of spectra used for each category 
+    in the plot. The "candidate" category is defined as the combination of "confirmed" and "unsure" categories.
+
+    :param table: The table containing the spectra data to plot, with a column for the category
+    of each spectrum and a column for the values to plot.
+    :type table: pd.DataFrame
+    :param col: The name of the column to plot the histogram for.
+    :type col: str
+    :param ax: The `matplotlib` axis to plot the histogram on.
+    :type ax: plt.Axes
+    :returns None: This function does not return any value.
+    """
+
+    # Selecting the part of the table with non-NaN values for the "negative" category and column to plot
+    rejected_table = table[table[ColNames.CATEGORY] == Categories.REJECTED].dropna(subset=[col])
+    # Plotting the histogram for the "negative" category and column with the associated color and label, using the weights to plot the fraction of spectra in each bin instead of the count
+    rejected_table[col].hist(bins=bins[col], weights=compute_column_weights(rejected_table, col), ax=ax, label=Categories.REJECTED, edgecolor=colors[Categories.REJECTED], histtype='step', linewidth=2)
+    # Displaying the number of spectra used for the "negative" category and column
+    ax.text(0.85, 0.90, rf"N$_{{rejected}}$ = {len(rejected_table)}", transform=ax.transAxes, fontsize=12, va='top')
+
+    # Selecting the part of the table with non-NaN values for the "candidate" category and column to plot
+    candidates_table = table[table[ColNames.CATEGORY].isin([Categories.CONFIRMED, Categories.UNSURE])].dropna(subset=[col])
+    # Plotting the histogram for the "candidate" category and column with the associated color and label, using the weights to plot the fraction of spectra in each bin instead of the count
+    candidates_table[col].hist(bins=bins[col], weights=compute_column_weights(candidates_table, col), ax=ax, label="candidates", edgecolor="green", histtype='step', linewidth=2)
+    # Displaying the number of spectra used for the "candidate" category and column
+    ax.text(0.85, 0.85, rf"N$_{{candidates}}$ = {len(candidates_table)}", transform=ax.transAxes, fontsize=12, va='top')
+
+    # Adding the legend to the plot
+    ax.legend(title=ColNames.CATEGORY, loc="upper left")
 
     # Returning to the main function
     return

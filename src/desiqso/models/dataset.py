@@ -9,7 +9,7 @@ import os
 import pandas as pd
 
 # Local imports
-from src.desiqso.config import (PRELIMINARY_DATA_PATH, VISUAL_INSPECTION_PATH, CROSS_CORRELATION_RESULTS_FOLDER, NEW_CANDIDATES_PATH, EXPECTED_CORE_TRANSMISSIONS_PATH, SNR_THRESHOLD,)
+from src.desiqso.config import (PRELIMINARY_DATA_PATH, VISUAL_INSPECTION_PATH, MAGNITUDES_DATA_FOLDER, CROSS_CORRELATION_RESULTS_FOLDER, NEW_CANDIDATES_PATH, EXPECTED_CORE_TRANSMISSIONS_PATH, SNR_THRESHOLD,)
 from src.desiqso.constants import (Categories, ColNames, Modes, VISUAL_LIST,)
 from src.desiqso.utils.helpers import (parse_cell, compute_grade, compute_relative_speed, _is_valid,)
 
@@ -22,14 +22,21 @@ class AnalysisResults:
 
     It currently contains the following class attributes:
     - _results: dict[str, pd.DataFrame]
+    - _visual_inspection: pd.DataFrame
     - _preliminary_results: dict[str, pd.DataFrame]
     - _expected_cor_trans: dict[str, float]
     - _candidates: list[np.ndarray, np.ndarray]
+    - _magnitudes: pd.DataFrame
 
     The available class methods are:
-    - load_results()
+    - load_results(folder : str = CROSS_CORRELATION_RESULTS_FOLDER, verbose : bool = True)
+    - reload(folder : str = CROSS_CORRELATION_RESULTS_FOLDER, verbose : bool = True)
     - load_preliminary_results(verbose : bool = True)
+    - load_visual_inspection_results(verbose : bool = True)
     - load_expected_core_transmissions()
+    - load_magnitudes(verbose : bool = True)
+    - results_survey(mode:str = Modes.ALL, profile_name : str = "all", thresholds_dict:dict = {}) -> pd.DataFrame
+    - export_results_list(path : str, mode : str, thresholds : dict[str, tuple[float]]))
     """
 
     # Class attribute to store the analysis results
@@ -42,6 +49,8 @@ class AnalysisResults:
     _expected_cor_trans : dict[str, float] = None
     # Class attribute to store the candidates
     _candidates : list[np.ndarray, np.ndarray] = None
+    # Class attribute to store the magnitudes data
+    _magnitudes : pd.DataFrame = None
 
     # Class method to load the analysis results from local files
     @classmethod
@@ -63,6 +72,14 @@ class AnalysisResults:
             # Return to the main program
             return
 
+        
+        # Initialize class attributes
+        cls._results             : pd.DataFrame     = None
+        cls._candidates          : dict[str, str]   = {}
+        cls._low_snr             : pd.DataFrame     = None
+        cls._failed              : pd.DataFrame     = None
+        cls._magnitudes          : pd.DataFrame     = None
+
         # Inform user
         if verbose:
             print("\n[INFO] Loading preliminary analysis results...")
@@ -70,12 +87,8 @@ class AnalysisResults:
         cls.load_preliminary_results(verbose=verbose)
         # Loading visual inspection results from local files
         cls.load_visual_inspection_results(verbose=verbose)
-
-        # Initialize class attributes
-        cls._results             : pd.DataFrame     = None
-        cls._candidates          : dict[str, str]   = {}
-        cls._low_snr             : pd.DataFrame     = None
-        cls._failed              : pd.DataFrame     = None
+        # Loading the magnitudes data from a local file
+        cls.load_magnitudes(verbose=verbose)
 
         # Inform user
         if verbose:
@@ -259,6 +272,37 @@ class AnalysisResults:
             os._exit(1)
         
         # Return to the main programm
+        return
+
+    # Class method to load the magnitudes data from a local file and store it in a DataFrame for faster access
+    @classmethod
+    def load_magnitudes(cls, verbose : bool = True) -> None:
+        """
+        This class method loads the magnitudes data from a local file and stores it in a DataFrame for faster access.
+        If the magnitudes data is not available, it returns to the main program with a warning message.
+
+        :param verbose: If True, it prints a message to the user. Defaults to True.
+        :type verbose: bool
+        :returns None: This function does not return anything.
+        """
+
+        # Checking if the magnitudes folder is empty
+        if len(os.listdir(MAGNITUDES_DATA_FOLDER)) == 0:
+            # If it is empty, return to the main program with a warning message
+            print("[WARNING] No magnitudes data available. Please run the `make download` command to retrieve the magnitudes data and save it in a local file.")
+            return
+        
+        # If the magnitudes data is already loaded, return to the main program to save time
+        if cls._magnitudes is not None:
+            return
+        
+        # Load the magnitudes data from a local file and store it in a DataFrame for faster access
+        cls._magnitudes = pd.read_csv(f"{MAGNITUDES_DATA_FOLDER}mag_table.csv") 
+        # Inform user
+        if verbose:
+            print("[INFO] Magnitudes data loaded.\n")
+
+        # Return to the main program
         return
 
     # Class method to fast access to the pd.DataFrame containing the results of the cross-correlation analysis based on some selection parameters

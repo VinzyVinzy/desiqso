@@ -34,27 +34,29 @@ def process_spectrum_record(record: Any, count: int) -> None:
     :type record: `sparcl.Results.Retrieved.Records`
     """
     # Attribute a human-readable to the spectra by calling the dedicated function `generate_spectrum_name`
-    name = generate_spectrum_name(record)
+    name = generate_spectrum_name(record.ra, record.dec)
     # Inform user of the processed spectrum
     tqdm.write(f"[INFO] Processing spectrum {count}: {name} (Redshift: z={record.redshift:.3f})")
     # Save the spectrum data in a local file using the `save_spectrum_data` function
     save_spectrum_data(record, name)
 
 # Function to generate a human-readable name for a spectrum based on its metadata
-def generate_spectrum_name(record: Any) -> str:
+def generate_spectrum_name(ra: float, dec: float) -> str:
     """
     Function generating a human-readable name for a spectrum based on its metadata, by 
     formatting the target coordinates (RA and DEC) into a string format commonly used 
     in astronomy (e.g., "Jhhmmss+ddmmss").
 
-    :param record: A record containing the metadata and data of a retrieved spectrum from the DESI-DR1 database.
-    :type record: `sparcl.Results.Retrieved.Records`
+    :param ra: The right ascension of the target in degrees.
+    :type ra: float
+    :param dec: The declination of the target in degrees.
+    :type dec: float
     :return: The human-readable name for the spectrum.
     :rtype: str
     """
     # Retrieve target coordinates with correct units
-    ra = record.ra * units.degree
-    dec = record.dec * units.degree
+    ra = ra * units.degree
+    dec = dec * units.degree
     # Create a `SkyCoord` object for the target to simplify coordinate formatting
     coord = SkyCoord(ra=ra, dec=dec)
     # Format the coordinates into a human-readable string using the `SkyCoord` formatting methods
@@ -116,4 +118,3 @@ def save_spectrum_data(record: Any, name: str) -> None:
         hdul[0].header["CHI_2"]     = (record.chi2, "Chi-squared value of the fit")
         hdul[0].header["TSNR2"]     = (record.tsnr2_qso, "TSNR2 value of the fit")
         hdul.flush()
-

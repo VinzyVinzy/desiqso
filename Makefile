@@ -34,7 +34,7 @@ run-debug:
 	$(PYTHON) $(DEBUG)/run_debug.py
 
 # Spectra loader command
-download-spectra:
+download:
 	$(PYTHON) $(DESIQSO)/pipelines/run_download.py
 
 # Generate synthetic profiles command
@@ -64,6 +64,10 @@ run-mock-analysis:
 # Run completeness analysis command
 completeness-analysis:
 	$(PYTHON) $(DESIQSO)/pipelines/run_completeness.py
+
+# Run physical analysis command
+physical-analysis:
+	$(PYTHON) $(DESIQSO)/pipelines/run_physical_analysis.py
 
 # Export analysis results command
 export-results:

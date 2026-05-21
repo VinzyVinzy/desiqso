@@ -175,3 +175,18 @@ def compute_excitation_temperature(T_exc0 : float) -> list[float]:
 
     # Return the excitation temperature for the rotational level
     return Texc
+
+# Utility function to compute the magnitude from a flux
+def compute_legacy_magnitude(flux : pd.Series, mw_transmission : pd.Series) -> pd.Series:
+    """
+    This function computes the magnitude from a flux using the formula : m = -2.5 * log10(flux/mw_transmission) + 22.5
+
+    :param flux: The flux to compute the magnitude from.
+    :type flux: pd.Series
+    :param mw_transmission: The Milky Way transmission in the band.
+    :type mw_transmission: pd.Series
+    :return pd.Series: The computed magnitudes.
+    """
+
+    # Return the computed magnitudes
+    return -2.5 * np.log10(flux/mw_transmission) + 22.5
