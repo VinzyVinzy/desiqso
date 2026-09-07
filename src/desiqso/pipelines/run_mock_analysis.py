@@ -1,5 +1,5 @@
 """
-This module contains the entry point for the `run-mock-analysis` command.
+This module contains the entry point for the `run-mock-analysis` command. 
 """
 
 # Local imports
