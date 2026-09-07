@@ -10,6 +10,9 @@ Currently, it contains the following functions:
 - `compute_relative_speed(z_abs: float, z_qso: float)`: computes the relative speed between two redshifts.
 - `_is_valid(row: pd.Series)`: checks if a row in a `pd.DataFrame` object is associated with a valid spectrum.
 - `compute_column_weights(table: pd.DataFrame, column: str)`: computes the weights for a given column in a table.
+- `compute_excitation_temperature(T_exc0: float)`: computes the excitation temperature for each rotational level from the ground level.
+- `compute_legacy_magnitude(flux: pd.Series, mw_transmission: pd.Series)`: computes the magnitude from a flux.
+- `compute_constant_continuum(wavelength: np.ndarray, flux: np.ndarray, err: np.ndarray, redshift: float)`: computes a constant continuum level from a spectrum.
 """
 
 # Importing necessary libraries
@@ -19,7 +22,7 @@ import pandas as pd
 
 # Local imports
 from src.desiqso.config import (CORE_TRANSMISSION_THRESHOLD, SNR_THRESHOLD, CORRELATION_PARAM_THRESHOLD,)
-from src.desiqso.constants import (C_KMS, ColNames,)
+from src.desiqso.constants import (H2_LYMAN_WERNER_BANDS, C_KMS, ColNames,)
 
 # Utility function to normalize an array using the min-max normalization
 def normalize(x : np.ndarray) -> np.ndarray:
@@ -190,3 +193,38 @@ def compute_legacy_magnitude(flux : pd.Series, mw_transmission : pd.Series) -> p
 
     # Return the computed magnitudes
     return -2.5 * np.log10(flux/mw_transmission) + 22.5
+
+# Utility function to compute a constant continuum level from a spectrum
+def compute_constant_continuum(wavelength : np.ndarray, flux : np.ndarray, err : np.ndarray, redshift : float) -> float:
+    """
+    This function computes a constant continuum level from a spectrum.
+
+    :param wavelength: The wavelength array of the spectrum.
+    :type wavelength: np.ndarray
+    :param flux: The flux array of the spectrum.
+    :type flux: np.ndarray
+    :param err: The error array of the spectrum.
+    :type err: np.ndarray
+    :param redshift: The redshift of the spectrum.
+    :type redshift: float
+    :return float: The computed constant continuum level.
+    """
+
+    # Determining Lyman-Werner region for the spectrum using its redshift
+    region = ((wavelength >= H2_LYMAN_WERNER_BANDS[0] * (1. + redshift)) & (wavelength <= H2_LYMAN_WERNER_BANDS[1] * (1. + redshift)))
+
+    # Extract valid flux values (remove NaN/inf)
+    flux_region = flux[region]
+    flux_region = flux_region[np.isfinite(flux_region)]
+
+    # Compute constant continuum value
+    #continuum_value = np.quantile(flux_region, 0.75) * 4./3.
+    #continuum_value = np.quantile(flux_region, 0.80)
+    continuum_value = np.nanquantile(flux[region], 0.90)*1.1 - 1.3*np.nanmedian(err[region])
+
+    # Check if the computed value is not valid, which is the case if it is finite and greater than 0
+    if not _is_valid_continuum(continuum_value):
+        # Return NaN for invalid values
+        return np.nan
+    
+    return continuum_value

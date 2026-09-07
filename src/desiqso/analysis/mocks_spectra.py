@@ -1,6 +1,22 @@
 """
-This module contains functions to create a sample of mock spectra and perform the cross-correlation analysis on it.
-It also plots some of the statistics and spectra from the mock spectra analysis results.
+This module contains functions to create a sample of mock spectra and perform the cross-correlation
+analysis on it. It also plots some of the statistics and spectra from the mock spectra analysis results.
+
+This module contains the following functions:
+- `create_mock_spectra`: This function creates a sample of mock spectra from a sample of 
+high-SNR (> 15) spectra with low-chance of H₂. It returns a dictionary containing the 
+filenames and corresponding modified records of the mock spectra as well as the list 
+of spectra to perform the cross-correlation analysis on.
+- `mock_spectra_statistics`: This function performs the statistical analysis of the results 
+from the cross-correlation analysis on the sample containing the mock spectra. It plots 
+some statistics distributions for multiple data groups and a few mock spectra to manually 
+inspect the results.
+- `sample_completeness_analysis`: This function plots the evolution of the valid sample
+completeness and purity with the threshold on given columns.
+- `mock_analysis`: This function performs the whole analysis with the mock spectra. It 
+creates the mock spectra or load them from a pickle file if they already exist. It then 
+performs the cross-correlation analysis on them, if needed. It loads the results of this 
+analysis and plots statistics and some spectra from it.
 """
 
 # Packages import
@@ -139,23 +155,25 @@ def mock_spectra_statistics(mock_spectra : dict[str, SpectrumRecord], profile_to
 
     # Defining the pairs of statistics to plot
     plot_pairs = [
-#        (ColNames.SNR, ColNames.CORR_PARAM),
-#        (ColNames.CORR_PARAM, ColNames.CORE_TRANS),
+        (ColNames.SNR, ColNames.CORR_PARAM),
+        (ColNames.CORR_PARAM, ColNames.CORE_TRANS),
         (ColNames.CORR_COEFF, ColNames.CORE_TRANS),
-#        (ColNames.Z, ColNames.CORR_PARAM),
-#        (ColNames.GRADE, ColNames.CORR_PARAM),
+        (ColNames.Z, ColNames.CORR_PARAM),
+        (ColNames.GRADE, ColNames.CORR_PARAM),
     ]
 
     # Retrieve the results table from the `AnalysisResults` class
     results = AnalysisResults._results.copy()
-    # Retrieve the table containing the results for the spectra in which H₂ was added and the analysis was a success
-    mock_results = results[results[ColNames.FILENAME].isin(mock_spectra.keys())].copy()
+    # Create a flag indicating whether the spectrum is a mock
+    results["Mock Flag"] = results[ColNames.FILENAME].isin(mock_spectra.keys())
+    # Retrieve the table containing the results for the spectra in which H₂ was added
+    mock_results = results[results["Mock Flag"]].copy()
     # Retrieve the table containing the results for the mock spectra successfully found
     mock_success = mock_results[mock_results[ColNames.IS_VALID] == 1].copy()
     # Retrieve the table containing the results for the mock spectra not found
     mock_failed = mock_results[mock_results[ColNames.IS_VALID] == 0].copy()
     # Retrieve the table containing the results for the false mock spectra
-    false_mock = results[~results[ColNames.FILENAME].isin(mock_spectra.keys())].copy()
+    false_mock = results[~results["Mock Flag"]].copy()
 
     # Defining the data, save path and additionnal labels to plot on the statistics plots
     plot_params = [
@@ -172,7 +190,7 @@ def mock_spectra_statistics(mock_spectra : dict[str, SpectrumRecord], profile_to
         if len(table) < 5:
             continue
         # Calling the `plot_distribution` function to plot the statistics distributions
-        plot_distribution(plot_pairs=plot_pairs, thresholds={}, profile_name=profile_to_fit.name, color_col=ColNames.SNR, mode=Modes.ALL, data=table, savepath=savepath, add_label=label)
+        plot_distribution(plot_pairs=plot_pairs, thresholds={}, profile_name=profile_to_fit.name, category_col="Mock Flag", color_col=ColNames.QSO_Z, mode=Modes.ALL, data=table, savepath=savepath, add_label=label)
     
     # ================
     # Plotting mock spectra

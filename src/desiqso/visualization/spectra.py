@@ -2,6 +2,11 @@
 This module contains functions to plot spectra and profiles after the cross-correlation analysis.
 It allows the user to visualize the best-fit profiles and the corresponding spectra, in order to 
 check the quality of the results.
+
+This module contains the following functions:
+- `plot_spectrum`: Plot a single spectrum with its best-fit profile.
+- `plot_spectra`: Plot multiple spectra with their best-fit profiles, based on the cross-correlation 
+analysis results and the selected mode of selection.
 """
 
 # Packages import
@@ -90,7 +95,7 @@ def plot_spectrum(row : pd.Series, folderpath : str, record : SpectrumRecord = N
     plt.plot(record.wavelength, record.flux, color="k", alpha=0.2, label="Unsmoothed spectrum")
 
     # Overplot spectrum smoothed (raw spectrum convolved with a 1D Gaussian Kernel using astropy)
-    plt.plot(record.wavelength, convolve(record.flux, Gaussian1DKernel(3)), color="k", label="Smoothed Spectrum")
+    plt.plot(record.wavelength, convolve(record.flux, Gaussian1DKernel(3)), color="k", label="Smoothed spectrum")
 
     # Overplot continuum model found in the SPARCL database
     plt.plot(record.wavelength, record.model, color="r", alpha=0.3, label="Continuum Model (DESI)")
@@ -103,7 +108,7 @@ def plot_spectrum(row : pd.Series, folderpath : str, record : SpectrumRecord = N
     plt.plot(record.wavelength, continuum_level*h2_synthetic_flux_rebinned, alpha=0.5, color="b", label=rf"$H_{{2}}$ profile used for fitting")
     # Overplot absorption features used for the cross-correlation analysis
     plt.scatter(record.wavelength[mask_data], continuum_level*h2_synthetic_flux_rebinned[mask_data], alpha=0.3, color="blue", s=10)
-    # Overplot absorption features used for the cross-correlation analysis
+    # Overplot absorption features used for the core transmission computation in the cross-correlation analysis
     plt.scatter(record.wavelength[mask_core], continuum_level*h2_synthetic_flux_rebinned[mask_core], alpha=0.3, color="red", s=10)
     # Overplot complete synthetic profile for comparaison
     complete_profile = profile.get_complete_profile()
@@ -150,7 +155,7 @@ def plot_spectrum(row : pd.Series, folderpath : str, record : SpectrumRecord = N
     # Saving plot
     # ==================
 
-    # 
+    # Setting the output folder if not specified
     if output_folder is None:
         output_folder = os.path.join(SPECTRA_PLOTS_FOLDER, f"{folderpath}/")
     # If the directory does not exist, create it

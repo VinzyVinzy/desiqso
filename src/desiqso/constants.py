@@ -1,5 +1,6 @@
 """
-This module contains constants used in the code.
+This module contains constants used in the code, and the enumeration for categories and 
+columns names in the numerous tables.
 """
 
 # Packages import
@@ -105,6 +106,27 @@ class MagColNames(StrEnum):
     GAIA_BP_MAG =   "Gaia bp-band magnitude"
     GAIA_RP_MAG =   "Gaia rp-band magnitude"
 
+# Enumeration of column names for the physical data table to prevent typos
+class PhysColNames(StrEnum):
+    """
+    This class contains the column names for the physical data table used in the code.
+    """
+
+    NAME       =   "Name"
+    TARGETID   = "Target ID"
+    RA         = "RA (deg)"
+    DEC        = "DEC (deg)"
+    MORPH_TYPE = "Morphological Type"
+    DCHISQ_PSF = "Difference in chi-squared for PSF"
+    DCHISQ_REX = "Difference in chi-squared for ReX"
+    DCHISQ_DEV = "Difference in chi-squared for Dev"
+    DCHISQ_EXP = "Difference in chi-squared for Exp"
+    DCHISQ_SER = "Difference in chi-squared for Ser"
+    SHAPE_R    = "Half-light radius of galaxy model (arcsec)"
+    SHAPE_E1   = "Ellipticity component 1 of galaxy model"
+    SHAPE_E2   = "Ellipticity component 2 of galaxy model"
+    SERSIC     = "Sersic power-law index"
+
 # Enumeration of analysis modes to prevent typos
 class Modes(StrEnum):
     """
@@ -122,6 +144,7 @@ class Modes(StrEnum):
     OTHER       = Categories.OTHER
     SAMPLE      = "sample"
     CANDIDATES  = "candidates"
+    PARENT      = "parent"
 
 # List of analysis modes associated with visual inspection
 VISUAL_LIST = {Modes.CONFIRMED, Modes.UNSURE, Modes.REJECTED}

@@ -35,7 +35,7 @@ settings = {
 PVALUE_THRESHOLD = -10.
 
 # Threshold for the correlation parameter to consider a successful cross-correlation detection
-CORRELATION_PARAM_THRESHOLD = 0.40
+CORRELATION_PARAM_THRESHOLD = 0.42
 
 # Threshold for the Core Transmission to consider a successful cross-correlation detection
 CORE_TRANSMISSION_THRESHOLD = 0.2
@@ -100,8 +100,17 @@ VISUAL_INSPECTION_PATH = "data/raw/visual_inspection/"
 # Path to the spectra data folder
 SPECTRA_DATA_FOLDER = "data/raw/spectra/"
 
+# Path to the PAQS spectra folder
+PAQS_SPECTRA_FOLDER = "data/raw/paqs_spectra/"
+
 # Path to the magnitudes data folder
 MAGNITUDES_DATA_FOLDER = "data/raw/magnitudes/"
+
+# Path to the physical data folder
+PHYSICAL_DATA_FOLDER = "data/raw/physical_data/"
+
+# Path to the image data folder
+IMAGE_DATA_FOLDER = "data/raw/images/"
 
 # Path to the spectra plots folder
 SPECTRA_PLOTS_FOLDER = RESULTS_FOLDER + "figures/spectra/"

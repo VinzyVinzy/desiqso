@@ -332,7 +332,7 @@ def plot_corrcoeff_vs_coretrans_2d(z_values : np.ndarray, correlation_coefficien
     return
 
 # Function to plot statistics distribution as scatter (with contour levels) or bin plot using a list of tuples containing the names of the statistics to plot
-def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, tuple[float]], profile_name : str, color_col : str = ColNames.GRADE, mode : str = Modes.ALL, data : pd.DataFrame = None, savepath : str = None, add_label : str = None) -> None:
+def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, tuple[float]], profile_name : str, category_col : str = ColNames.CATEGORY, color_col : str = ColNames.GRADE, mode : str = Modes.ALL, data : pd.DataFrame = None, savepath : str = None, add_label : str = None) -> None:
     """
     Main function to plot statistics distribution as scatter (with contour levels) 
     or bin plot using a list of tuples containing the names of the statistics to 
@@ -344,6 +344,8 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
     :type thresholds: dict[str, tuple[float]]
     :param profile_name: Name of the synthetic profile.
     :type profile_name: str
+    :param category_col: Name of the column to use for categorizing the data. Defaults to ColNames.CATEGORY.
+    :type category_col: str
     :param result_table: Table containing the results of the cross-correlation analysis.
     :type result_table: pd.DataFrame
     :param color_col: Name of the column to use for the colormapping in the scatter plots.
@@ -416,7 +418,7 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
         # If the plot mode is set to "scatter"
         else:
             # Calling the function to plot the scatter
-            plot_scatter(data, x_key, y_key, color_col, ax=ax)
+            plot_scatter(data, x_key, y_key, ax=ax, category_col=category_col, color_col=color_col)
         
         # =========
         # Plot formatting
@@ -454,10 +456,19 @@ def plot_distribution(plot_pairs : list[tuple[str,str]], thresholds : dict[str, 
         plt.grid(True, alpha=.5)
         # Plotting the legend only in "scatter" mode
         if PLOT_TYPE == "scatter":
-            # Defining the marker legend
-            marker_legend = [Line2D([0], [0], marker=marker, color="black", linestyle="None", markersize=8, label=f"{group}", markeredgecolor=edgecolors[group], linewidth=1.,) for group, marker in markers.items()]
-            # Adding the legend to the plot
-            plt.legend(handles=marker_legend, title="Categories", loc="upper right")
+            # If the column for categorizing the data is ColNames.CATEGORY, we use the predefined colors and markers for each category
+            if category_col == ColNames.CATEGORY:
+                # Defining the marker legend
+                marker_legend = [Line2D([0], [0], marker=marker, color="black", linestyle="None", markersize=8, label=f"{group}", markeredgecolor=edgecolors[group], linewidth=1.,) for group, marker in markers.items()]
+                # Adding the legend to the plot
+                plt.legend(handles=marker_legend, title="Categories", loc="upper right")
+            
+            # If the column for categorizing the data is "Mock Flag", we use a personnalized legend
+            if category_col == "Mock Flag":
+                # Defining the marker legend
+                marker_legend = [Line2D([0], [0], marker="o", color="black", linestyle="None", markersize=8, label=r"with H$_2$", linewidth=1.,), Line2D([0], [0], marker="x", color="black", linestyle="None", markersize=8, label=r"no H$_2$", linewidth=1.,)]
+                # Adding the legend to the plot
+                plt.legend(handles=marker_legend, title="Mock spectra", loc="upper right")
 
         # Setting the plot limits
         plt.xlim(plot_sizes[x_key][0], plot_sizes[x_key][1])
@@ -595,7 +606,7 @@ def plot_standard_bin(x_data : pd.DataFrame, y_data : pd.DataFrame, ax : plt.Axe
     ax.errorbar(bin_centers, bin_means, xerr=bin_widths, yerr=bin_std, fmt="o", color="black", ecolor="black", capsize=4, capthick=1)
 
 # This function plots a scatter plot for the provided data
-def plot_scatter(data : pd.DataFrame, x_key : str, y_key : str, color_col : str, ax : plt.Axes) -> None:
+def plot_scatter(data : pd.DataFrame, x_key : str, y_key : str, ax : plt.Axes, category_col : str =  ColNames.CATEGORY, color_col : str = ColNames.QSO_Z) -> None:
     """
     Plots a scatter plot representing the provided data distribution, with colormapping.
 
@@ -605,6 +616,8 @@ def plot_scatter(data : pd.DataFrame, x_key : str, y_key : str, color_col : str,
     :type x_key: str
     :param y_key: The key corresponding to the y-axis values.
     :type y_key: str
+    :param category_col: The key corresponding to the column to use for the categories. Defaults to ColNames.CATEGORY.
+    :type category_col: str
     :param color_col: The key corresponding to the column to use for the colormapping.
     :type color_col: str
     :param ax: The axis to plot on.
@@ -627,16 +640,29 @@ def plot_scatter(data : pd.DataFrame, x_key : str, y_key : str, color_col : str,
     else:
         norm = mcolors.Normalize(vmin=colormap_values[color_col][0], vmax=colormap_values[color_col][1])
 
-    # Loop on the data groups
-    for category in categories:
-        # Filtering the data for the current group
-        group = data[data[ColNames.CATEGORY] == category]
-        # Retrieving the x and y values related to the current data group
-        x_values = group[x_key]
-        y_values = group[y_key]
-        color_vals = group[color_col]
-        # Scatter plot of the current data group
-        plt.scatter(x_values, y_values, c=color_vals, cmap=colormap_palettes[color_col], norm=norm, marker=markers[category], s=sizes[category], alpha=alphas[category], edgecolors=edgecolors[category], linewidths=1.,)
+    # If the column to use for categorizing the data is the "Category" column, we use the predefined categories
+    if category_col == ColNames.CATEGORY:
+        # Loop on the data groups
+        for category in categories:
+            # Filtering the data for the current group
+            group = data[data[ColNames.CATEGORY] == category]
+            # Retrieving the x and y values related to the current data group
+            x_values = group[x_key]
+            y_values = group[y_key]
+            color_vals = group[color_col]
+            # Scatter plot of the current data group
+            plt.scatter(x_values, y_values, c=color_vals, cmap=colormap_palettes[color_col], norm=norm, marker=markers[category], s=sizes[category], alpha=alphas[category], edgecolors=edgecolors[category], linewidths=1.,)
+    
+    # If the column to use for categorizing the data is the "Mock Flag" column, we use the "Mock" and "Real" categories
+    elif category_col == "Mock Flag":
+        # Retrieving the data table for the "Real" category
+        real_group = data[~data["Mock Flag"]].copy()
+        # Scatter plot for the "Real" category
+        plt.scatter(real_group[x_key], real_group[y_key], c=real_group[color_col], cmap=colormap_palettes[color_col], norm=norm, marker="x", s=50, alpha=0.5, edgecolors="none", linewidths=1.,)
+        # Retrieving the data table for the "Mock" category
+        mock_group = data[data["Mock Flag"]].copy()
+        # Scatter plot for the "Mock" category
+        plt.scatter(mock_group[x_key], mock_group[y_key], c=mock_group[color_col], cmap=colormap_palettes[color_col], norm=norm, marker="o", s=80, alpha=0.8, edgecolors="black", linewidths=1.,)
     
     # If the keys are the correlation coefficient and the core transmission
     if x_key == ColNames.CORR_COEFF and y_key == ColNames.CORE_TRANS:

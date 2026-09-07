@@ -83,7 +83,7 @@ def save_spectrum_data(record: Any, name: str) -> None:
         os.makedirs(SPECTRA_DATA_FOLDER)
     
     # Attribute file name and path to the spectrum data
-    file_name = SPECTRA_DATA_FOLDER + f"desi_J{name.replace(':', '')}.fits"
+    file_name = os.path.join(SPECTRA_DATA_FOLDER, f"desi_J{name.replace(':', '')}.fits")
 
     # Convert the spectrum data into a `Spectrum` object for easier saving
     spectrum = Spectrum(

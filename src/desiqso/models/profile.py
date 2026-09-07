@@ -126,7 +126,6 @@ class ProfileManager:
         # Returning the index
         return list(cls._profiles.keys()).index(name)
     
-
 # Class representing a profile for easier handling of the synthetic H₂ profiles data for the spectra analysis
 @dataclass
 class Profile:
@@ -141,6 +140,8 @@ class Profile:
     Finally, it contains the following class methods:
     - `from_synthetic`: factory method to create a `Profile` instance from a synthetic profile data for easier 
     conversion of the loaded synthetic profile data into a python object to manipulate it for the spectra analysis.
+    - `get_complete_profile`: method to return a complete version of a synthetic profile, which is generated using the same 
+    parameters as the original profile but with a higher Jmax value to include more absorption features in the synthetic profile.
     - `save`: method to save the synthetic profile data to a file for later use in the spectra analysis.
     """
 
@@ -190,6 +191,25 @@ class Profile:
         Factory method to create a `Profile` instance from a synthetic profile data for easier 
         conversion of the loaded synthetic profile data into a python object to manipulate it 
         for the spectra analysis.
+
+        :param resolution_power: The resolution power of the synthetic profile. Defaults to 2000.
+        :type resolution_power: float
+        :param Ntot: The total column density of the synthetic profile. Defaults to 1e20.
+        :type Ntot: float
+        :param T_exc0: The excitation temperature of the synthetic profile. Defaults to 100.
+        :type T_exc0: float
+        :param Jmax: The maximum rotational level of the synthetic profile. Defaults to 1.
+        :type Jmax: int
+        :param b_param: The velocity width of the Voigt profile (Doppler parameter). Defaults to 5.
+        :type b_param: float
+        :param pixel_size: The pixel size of the synthetic profile. Defaults to 5.
+        :type pixel_size: float
+        :param save: Flag specifying whether to save the synthetic profile data to a file for later use in the spectra analysis. Defaults to True.
+        :type save: bool
+        :param verbose: Flag specifying whether to print verbose output. Defaults to True.
+        :type verbose: bool
+        :return: A `Profile` instance corresponding to the synthetic profile.
+        :rtype: Profile
         """
 
         # Computing the excitation temperature for all the rotational levels
@@ -240,5 +260,6 @@ class Profile:
 
         # Informing user
         print(f"\n[INFO] Synthetic H2 profile successfully saved in file `{profile_filename}`.\n")
-    
-    
+
+        # Returning
+        return

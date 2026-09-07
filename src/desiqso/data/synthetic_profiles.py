@@ -1,5 +1,10 @@
 """
 This module contains functions to generate synthetic H₂ profiles using the VoigtFit package.
+
+It contains the following functions:
+
+- `generate_h2_profile`: Generates a synthetic H₂ profile from a list of bands and a few parameters.
+- `wl_grid_const_speed`: Computes the wavelength grid for a constant speed profile.
 """
 
 # Do not show numpy warnings (neccessary for the VoigtFit package)

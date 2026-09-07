@@ -4,12 +4,16 @@ It allows for easier access and manipulation of the spectrum data and metadata.
 """
 
 # Importing necessary libraries
+from astropy.io import fits
+from astropy.table import Table
 from dataclasses import dataclass
 import numpy as np
+import os
 
 # Local imports
-from src.desiqso.constants import H2_LYMAN_WERNER_BANDS, SNR_ESTIMATION_RANGE
-from src.desiqso.utils.helpers import _is_valid_continuum
+from src.desiqso.config import (PAQS_SPECTRA_FOLDER,)
+from src.desiqso.constants import (H2_LYMAN_WERNER_BANDS, SNR_ESTIMATION_RANGE,)
+from src.desiqso.utils.helpers import compute_constant_continuum
 
 # Class representing a spectrum record for easier handling of the retrieved spectra data from the DESI-DR1 database
 @dataclass
@@ -93,27 +97,13 @@ class SpectrumRecord:
         needed.
 
         If the computed value is not valid (i.e. not finite or smaller than 0), an error is 
-        raised, leading to return -1. for invalid values.
+        raised, leading to return np.nan for invalid values.
 
         :return float: The constant continuum level.
         """
 
-        # Determining Lyman-Werner region for the spectrum using its redshift
-        region = ((self.wavelength >= H2_LYMAN_WERNER_BANDS[0] * (1. + self.redshift)) & (self.wavelength <= H2_LYMAN_WERNER_BANDS[1] * (1. + self.redshift)))
-
-        # Extract valid flux values (remove NaN/inf)
-        flux_region = self.flux[region]
-        flux_region = flux_region[np.isfinite(flux_region)]
-
-        # Compute constant continuum value
-        #continuum_value = np.quantile(flux_region, 0.75) * 4./3.
-        #continuum_value = np.quantile(flux_region, 0.80)
-        continuum_value = np.quantile(flux_region, 0.90)*1.1 - 1.3*np.median(self.err[region])
-
-        # Check if the computed value is not valid, which is the case if it is finite and greater than 0
-        if not _is_valid_continuum(continuum_value):
-            # Return NaN for invalid values
-            return np.nan
+        # Compute the constant continuum level using the dedicated function
+        continuum_value = compute_constant_continuum(self.wavelength, self.flux, self.err, self.redshift)
 
         # Return the constant continuum level
         return continuum_value
@@ -193,4 +183,38 @@ class SpectrumRecord:
             dec         =   hdr.get("DEC", np.nan),
             chi_2       =   hdr.get("CHI_2", np.nan),
             tsnr2_qso   =   hdr.get("TSNR2", np.nan),
-        )    
+        )
+    
+    # Class method to create  a `SpectrumRecord` instance from a PAQS FITS file data
+    @classmethod
+    def from_paqs(cls, filename : str) -> "SpectrumRecord":
+        """
+        This function is still unfinished.
+        """
+
+        # Extract the relevant metadata from the FITS file
+        with fits.open(os.path.join(PAQS_SPECTRA_FOLDER, filename)) as hdul:
+            hdr = hdul[1].header
+
+        # Read the FITS file as `Table` using the `astropy` package
+        table = Table.read(os.path.join(PAQS_SPECTRA_FOLDER, filename), hdu=1)
+
+        # Return a `SpectrumRecord` instance initialized with the extracted data and metadata
+        return cls(
+            wavelength  =   table["WAVE"][0],
+            flux        =   table["FLUX"][0],
+            err         =   table["ERR"][0],
+            redshift    =   hdr.get("QZC_Z", np.nan),
+            redshift_err=   hdr.get("QZC_ZERR", np.nan),
+            redshift_wrn=   hdr.get("QZC_ZWRN", np.nan),
+            name        =   hdr.get("OBJ_NME", "Unknown"),
+            data_release=   hdr.get("DATAREL", "Unknown"),
+            model       =   np.full_like(table["WAVE"][0], np.nan),     # No model of continuum are provided in PAQS
+            mask        =   table["QUAL"][0],
+            spectype    =   hdr.get("QSC_CLS", "QSO"),
+            specid      =   hdr.get("SPECUID", np.nan),
+            ra          =   hdr.get("OBJ_RA", np.nan),
+            dec         =   hdr.get("OBJ_DEC", np.nan),
+            chi_2       =   np.nan,                                     # Field not available in PAQS
+            tsnr2_qso   =   np.nan,                                     # Field not available in PAQS
+        )

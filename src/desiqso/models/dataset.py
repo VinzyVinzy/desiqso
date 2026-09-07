@@ -1,6 +1,9 @@
 """
 This module contains a class to store the results of the cross-correlation analysis.
 It allows for easy loading and management of the results.
+
+This module also contains a utility function to identify the category (data group) 
+of a spectrum using the visual inspection results.
 """
 
 # Importing necessary libraries
@@ -9,9 +12,9 @@ import os
 import pandas as pd
 
 # Local imports
-from src.desiqso.config import (PRELIMINARY_DATA_PATH, VISUAL_INSPECTION_PATH, MAGNITUDES_DATA_FOLDER, CROSS_CORRELATION_RESULTS_FOLDER, NEW_CANDIDATES_PATH, EXPECTED_CORE_TRANSMISSIONS_PATH, SNR_THRESHOLD,)
-from src.desiqso.constants import (Categories, ColNames, Modes, VISUAL_LIST,)
-from src.desiqso.utils.helpers import (parse_cell, compute_grade, compute_relative_speed, _is_valid,)
+from src.desiqso.config import (PRELIMINARY_DATA_PATH, VISUAL_INSPECTION_PATH, MAGNITUDES_DATA_FOLDER, PHYSICAL_DATA_FOLDER, CROSS_CORRELATION_RESULTS_FOLDER, NEW_CANDIDATES_PATH, EXPECTED_CORE_TRANSMISSIONS_PATH, SNR_THRESHOLD,)
+from src.desiqso.constants import (Categories, ColNames, MagColNames, Modes, VISUAL_LIST,)
+from src.desiqso.utils.helpers import (parse_cell, compute_grade, compute_relative_speed, _is_valid, compute_legacy_magnitude)
 
 # Class to store the results of the cross-correlation analysis
 class AnalysisResults:
@@ -21,7 +24,7 @@ class AnalysisResults:
     for each synthetic profile, and the new candidates list.
 
     It currently contains the following class attributes:
-    - _results: dict[str, pd.DataFrame]
+    - _results: pd.DataFrame
     - _visual_inspection: pd.DataFrame
     - _preliminary_results: dict[str, pd.DataFrame]
     - _expected_cor_trans: dict[str, float]
@@ -33,9 +36,9 @@ class AnalysisResults:
     - reload(folder : str = CROSS_CORRELATION_RESULTS_FOLDER, verbose : bool = True)
     - load_preliminary_results(verbose : bool = True)
     - load_visual_inspection_results(verbose : bool = True)
-    - load_expected_core_transmissions()
     - load_magnitudes(verbose : bool = True)
     - results_survey(mode:str = Modes.ALL, profile_name : str = "all", thresholds_dict:dict = {}) -> pd.DataFrame
+    - find_similar_quasar(quasar_row : pd.Series) -> pd.DataFrame
     - export_results_list(path : str, mode : str, thresholds : dict[str, tuple[float]]))
     """
 
@@ -51,6 +54,8 @@ class AnalysisResults:
     _candidates : list[np.ndarray, np.ndarray] = None
     # Class attribute to store the magnitudes data
     _magnitudes : pd.DataFrame = None
+    # Class attribute to store the physical data
+    _physical_data : pd.DataFrame = None
 
     # Class method to load the analysis results from local files
     @classmethod
@@ -58,8 +63,9 @@ class AnalysisResults:
         """
         This class method loads the cross-correlation analysis results from local files only once to save extra 
         time and guarantee easier access. Also loads the results table associated with the preliminary analysis and
-        the low-SNR table. If available, it also loads the new candidates list and the expected core transmissions
-        for the synthetic profiles. Returns to the main function if there are no results to load.
+        the low-SNR table. If available, it also loads the magnitudes data and the morphological data of the 
+        quasars from local files, as well as the visual inspection results. Returns to the main function if 
+        there are no results to load. 
 
         :param folder: The folder containing the results of the cross-correlation analysis.
         :type folder: str
@@ -72,13 +78,13 @@ class AnalysisResults:
             # Return to the main program
             return
 
-        
         # Initialize class attributes
         cls._results             : pd.DataFrame     = None
         cls._candidates          : dict[str, str]   = {}
         cls._low_snr             : pd.DataFrame     = None
         cls._failed              : pd.DataFrame     = None
         cls._magnitudes          : pd.DataFrame     = None
+        cls._physical_data       : pd.DataFrame     = None
 
         # Inform user
         if verbose:
@@ -89,6 +95,8 @@ class AnalysisResults:
         cls.load_visual_inspection_results(verbose=verbose)
         # Loading the magnitudes data from a local file
         cls.load_magnitudes(verbose=verbose)
+        # Loading the physical data from a local file
+        cls.load_physical_data(verbose=verbose)
 
         # Inform user
         if verbose:
@@ -133,9 +141,6 @@ class AnalysisResults:
             # Inform user
             if verbose:
                 print("[INFO] Cross-correlation analysis results loaded.\n")
-
-            # Class method to load the expected core transmissions from local file
-            #cls.load_expected_core_transmissions()
             
             # If the file containing the new candidates is available
             if os.path.exists(NEW_CANDIDATES_PATH):
@@ -209,9 +214,12 @@ class AnalysisResults:
     # Class method to load the results of the visual inspection
     @classmethod
     def load_visual_inspection_results(cls, verbose : bool = True) -> None:
-        """Class method to load the results of the visual inspection from a local file.
+        """
+        Class method to load the results of the visual inspection from a local file.
         
         The function first checks if the visual inspection results are already loaded to save time.
+
+        :param verbose: If True, prints information about the visual inspection results.
         :type verbose: bool
         """
         # If the results of the visual inspection are available
@@ -229,50 +237,50 @@ class AnalysisResults:
         return
 
     # Class method to load the expected core transmissions for each synthetic profile
-    @classmethod
-    def load_expected_core_transmissions(cls) -> None:
-        """
-        Class method to load the expected core transmissions for each synthetic profile from a local file.
+    # @classmethod
+    # def load_expected_core_transmissions(cls) -> None:
+    #     """
+    #     Class method to load the expected core transmissions for each synthetic profile from a local file.
         
-        The function first checks if the expected core transmissions are already loaded to save time.
-        Then, it checks if the file containing the expected core transmissions is available, and if it is, it reads the file 
-        and stores the expected core transmissions in a dictionary.
+    #     The function first checks if the expected core transmissions are already loaded to save time.
+    #     Then, it checks if the file containing the expected core transmissions is available, and if it is, it reads the file 
+    #     and stores the expected core transmissions in a dictionary.
         
-        If the file is not available, the function prints an information message to the user and exits the program with an error.
+    #     If the file is not available, the function prints an information message to the user and exits the program with an error.
         
-        :return: This function does not return anything.
-        :rtype: None
-        """
+    #     :return: This function does not return anything.
+    #     :rtype: None
+    #     """
 
-        # If the expected core transmissions are already loaded, exit the function to save time
-        if cls._expected_cor_trans is not None:
-            return
+    #     # If the expected core transmissions are already loaded, exit the function to save time
+    #     if cls._expected_cor_trans is not None:
+    #         return
 
-        # Initialize class attribute        
-        cls._expected_cor_trans  : dict[str, float] = {}
+    #     # Initialize class attribute        
+    #     cls._expected_cor_trans  : dict[str, float] = {}
 
-        # If the file containing the expected core transmissions is available
-        if os.path.exists(EXPECTED_CORE_TRANSMISSIONS_PATH):
-            # Reading the expected core transmissions file
-            with open(EXPECTED_CORE_TRANSMISSIONS_PATH, "r") as file:
-                # Loop on the lines
-                for line in file:
-                    # Split the line to retrieve the name and the expected core transmission
-                    name, expected_core_transmission = line.strip().split("\t")
-                    # Storing the expected core transmission
-                    cls._expected_cor_trans[name] = float(expected_core_transmission)
-            # Inform user
-            print("[INFO] Expected core transmissions loaded.")
+    #     # If the file containing the expected core transmissions is available
+    #     if os.path.exists(EXPECTED_CORE_TRANSMISSIONS_PATH):
+    #         # Reading the expected core transmissions file
+    #         with open(EXPECTED_CORE_TRANSMISSIONS_PATH, "r") as file:
+    #             # Loop on the lines
+    #             for line in file:
+    #                 # Split the line to retrieve the name and the expected core transmission
+    #                 name, expected_core_transmission = line.strip().split("\t")
+    #                 # Storing the expected core transmission
+    #                 cls._expected_cor_trans[name] = float(expected_core_transmission)
+    #         # Inform user
+    #         print("[INFO] Expected core transmissions loaded.")
 
-        # If the file containing the expected core transmissions is not available
-        else:
-            # Inform user
-            print("[INFO] Expected core transmissions not loaded. Please run the `make dependencies-analysis` command to compute the expected core transmissions and save them.")
-            # Exit the programm with an error
-            os._exit(1)
+    #     # If the file containing the expected core transmissions is not available
+    #     else:
+    #         # Inform user
+    #         print("[INFO] Expected core transmissions not loaded. Please run the `make dependencies-analysis` command to compute the expected core transmissions and save them.")
+    #         # Exit the programm with an error
+    #         os._exit(1)
         
-        # Return to the main programm
-        return
+    #     # Return to the main programm
+    #     return
 
     # Class method to load the magnitudes data from a local file and store it in a DataFrame for faster access
     @classmethod
@@ -305,9 +313,40 @@ class AnalysisResults:
         # Return to the main program
         return
 
+    # Class method to load the physical data from a local file and store it in a DataFrame for faster access
+    @classmethod
+    def load_physical_data(cls, verbose : bool = True) -> None:
+        """
+        This class method loads the physical data from a local file and stores it in a DataFrame for faster access.
+        If the physical data is not available, it returns to the main program with a warning message.
+
+        :param verbose: If True, it prints a message to the user. Defaults to True.
+        :type verbose: bool
+        :returns None: This function does not return anything.
+        """
+
+        # Checking if the physical data folder is empty
+        if len(os.listdir(PHYSICAL_DATA_FOLDER)) == 0:
+            # If it is empty, return to the main program with a warning message
+            print("[WARNING] No physical data available. Please run the `make download` command to retrieve the physical data and save it in a local file.")
+            return
+        
+        # If the physical data is already loaded, return to the main program to save time
+        if cls._physical_data is not None:
+            return
+        
+        # Load the physical data from a local file and store it in a DataFrame for faster access
+        cls._physical_data = pd.read_csv(f"{PHYSICAL_DATA_FOLDER}physical_data.csv") 
+        # Inform user
+        if verbose:
+            print("[INFO] Physical data loaded.\n")
+
+        # Return to the main program
+        return
+
     # Class method to fast access to the pd.DataFrame containing the results of the cross-correlation analysis based on some selection parameters
     @classmethod
-    def results_survey(cls, mode:str = Modes.ALL, profile_name : str = "all", thresholds_dict:dict = {}) -> pd.DataFrame:
+    def results_survey(cls, mode : str = Modes.ALL, profile_name : str = "best", thresholds_dict : dict = {}) -> pd.DataFrame:
         """
         This class method allows the user to fast access to the `pd.DataFrame` containing the results of the 
         cross-correlation analysis based on some selection parameters.
@@ -322,6 +361,8 @@ class AnalysisResults:
 
         # Creating a dictionary to store the thresholds and make sure no invalid values are passed
         thresholds = {
+            ColNames.RA           :   thresholds_dict.get(ColNames.RA, (None, None)),
+            ColNames.DEC          :   thresholds_dict.get(ColNames.DEC, (None, None)),
             ColNames.CORR_PROB    :   thresholds_dict.get(ColNames.CORR_PROB, (None, None)),
             ColNames.CORE_TRANS   :   thresholds_dict.get(ColNames.CORE_TRANS, (None, None)),
             ColNames.CORR_COEFF   :   thresholds_dict.get(ColNames.CORR_COEFF, (None, None)),
@@ -359,6 +400,11 @@ class AnalysisResults:
             table = table[table[ColNames.IS_VALID] == 1]
         elif mode == Modes.CANDIDATES:
             table = table[table[ColNames.CATEGORY].isin([Categories.CONFIRMED, Categories.UNSURE])]
+        elif mode == Modes.PARENT:
+            _, max_qsoz = thresholds[ColNames.QSO_Z]
+            _, max_snr = thresholds[ColNames.SNR]
+            thresholds[ColNames.QSO_Z] = (2.6, 3.76592)
+            thresholds[ColNames.SNR] = (3.0, max_snr)
 
         # Initialize mask
         mask = pd.Series(True, index=table.index)
@@ -375,6 +421,64 @@ class AnalysisResults:
 
         # Returning the filtered results
         return filtered_table
+
+    # Class method to retrieve a sample of 10 quasars with similar properties than a given quasar
+    @classmethod
+    def find_similar_quasar(cls, quasar_row : pd.Series) -> pd.DataFrame:
+        """
+        This class method allows the user to retrieve a sample of maximum 10 quasars with similar properties 
+        than a given quasar using its row in the results table.
+
+        :param quasar_row: The row corresponding to the quasar of interest.
+        :type quasar_row: pd.Series
+        :return: A DataFrame containing the 10 similar quasars.
+        :rtype: pd.DataFrame
+        """
+
+        # Retrieve the properties of the quasar from his row
+        ra = quasar_row[ColNames.RA]
+        dec = quasar_row[ColNames.DEC]
+        qso_z = quasar_row[ColNames.QSO_Z]
+
+        # Setting search radius in degrees
+        rad = 5.
+        # Setting the search range in redshift
+        z_range = .25
+        # Survey to retrieve quasars with similar properties
+        survey = cls.results_survey(mode=Modes.OTHER, thresholds_dict={ColNames.RA : (ra - rad/2, ra + rad/2), ColNames.DEC : (dec - rad/2, dec + rad/2), ColNames.QSO_Z : (qso_z - z_range/2, qso_z + z_range/2)})
+
+        # Dropping the quasar from the survey
+        table = survey[survey[ColNames.FILENAME] != quasar_row[ColNames.FILENAME]].copy()
+        # Merging this table with the magnitudes table for the columns of interest
+        table = pd.merge(table, cls._magnitudes.copy()[[MagColNames.NAME, MagColNames.Z_FLUX, MagColNames.MW_TRANS_Z, MagColNames.W1_FLUX, MagColNames.MW_TRANS_W1]], how="left", on=ColNames.NAME)
+
+        # Retrieving the photometric properties of the quasar from Legacy and WISE
+        photo_row = cls._magnitudes.loc[cls._magnitudes[ColNames.NAME] == quasar_row[ColNames.NAME]]
+        # If the table is empty, return a DataFrame using only the spatial and redshift constraints
+        if len(photo_row) == 0:
+            return table.sample(n=min(10, len(table)))
+
+        # Retrieving the fluxes
+        z_flux = photo_row[MagColNames.Z_FLUX].iloc[0]
+        w1_flux = photo_row[MagColNames.W1_FLUX].iloc[0]
+
+        # Computing the photometric properties of the quasar in the table
+        table["Optic Magnitude"] = compute_legacy_magnitude(table[MagColNames.Z_FLUX], table[MagColNames.MW_TRANS_Z])
+        table["IR Magnitude"] = compute_legacy_magnitude(table[MagColNames.W1_FLUX], table[MagColNames.MW_TRANS_W1])
+
+        # Defining the magnitude range for the search of similar quasars
+        mag_range = 1.5
+        # Apply optical magnitude constraint only if the target has a valid z flux
+        if z_flux > 0:
+            opt_mag = compute_legacy_magnitude(photo_row[MagColNames.Z_FLUX],photo_row[MagColNames.MW_TRANS_Z]).iloc[0]
+            table = table[(table["Optic Magnitude"] >= opt_mag - mag_range / 2) & (table["Optic Magnitude"] <= opt_mag + mag_range / 2)].copy()
+        # Apply infrared magnitude constraint only if the target has a valid W1 flux
+        if w1_flux > 0:
+            ir_mag = compute_legacy_magnitude(photo_row[MagColNames.W1_FLUX],photo_row[MagColNames.MW_TRANS_W1]).iloc[0]
+            table = table[(table["IR Magnitude"] >= ir_mag - mag_range / 2) & (table["IR Magnitude"] <= ir_mag + mag_range / 2)].copy()
+
+        # Returning a table containing a maximum of 10 similar quasars
+        return table.sample(n=min(10, len(table)))
 
     # Class method to export a subset of the results of the cross-correlation analysis
     @classmethod
@@ -416,6 +520,7 @@ def which_data_group(filename: str) -> str:
         :return: The category (data group) of the spectrum.
         :rtype: str
         """
+
         # Retrieve the row corresponding to the filename passed as argument
         row = AnalysisResults._visual_inspection[AnalysisResults._visual_inspection[ColNames.FILENAME] == filename]
 

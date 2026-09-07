@@ -1,10 +1,15 @@
 """
 This module contains the entry point for the `make download-spectra` command.
+
+It first checks the status of the downloaded spectra and then proceeds to download the necessary data.
+Then, it downloads the magnitudes and physical data for the quasar spectra from the databases associated 
+with the DESI-DR1 program, using TAP queries.
 """
-import os
+
 # Local imports
-from src.desiqso.data.spectra_downloader import (download_preliminary_spectra, retrieve_spectra_from_database, check_spectra_downloaded)
 from src.desiqso.data.magnitudes import download_magnitudes
+from src.desiqso.data.physical_data import download_physical_data
+from src.desiqso.data.spectra_downloader import (download_preliminary_spectra, retrieve_spectra_from_database, check_spectra_downloaded)
 
 # Entry point for the `make download-spectra` command
 if __name__ == "__main__":
@@ -20,3 +25,6 @@ if __name__ == "__main__":
 
     # Calling the function to download the magnitudes data for the quasar spectra from the DESI-DR1 photometric database using TAP queries
     download_magnitudes()
+
+    # Calling the function to download the physical data for the quasar spectra from the DESI-DR1 database using TAP queries
+    download_physical_data()

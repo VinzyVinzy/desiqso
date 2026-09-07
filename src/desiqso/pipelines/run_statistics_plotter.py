@@ -1,6 +1,6 @@
 """
 This module contains the entry point for the `plot-statistics` command.
-It also defines the pairs of statistics to plot.
+It also defines the pairs of statistics to plot on the flight.
 """
 
 # Local imports
@@ -29,9 +29,9 @@ if __name__ == "__main__":
         ColNames.CORE_TRANS :   (None, None),
         ColNames.CORR_COEFF :   (None, None),
         ColNames.CORR_PARAM :   (None, None),
-        ColNames.QSO_Z      :   (None, None),
+        ColNames.QSO_Z      :   (2.6, None),
         ColNames.Z          :   (None, None),
-        ColNames.SNR        :   (None, None),
+        ColNames.SNR        :   (3.0, None),
         ColNames.CNR        :   (None, None),
         ColNames.GRADE      :   (None, None),
         ColNames.REL_SPEED  :   (None, None),

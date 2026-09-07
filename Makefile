@@ -23,6 +23,9 @@ install:
 # Utility commands
 # ================
 
+# Run the test code
+test:
+	$(PYTHON) $(DESIQSO)/utils/test.py
 
 
 # ================
@@ -44,6 +47,10 @@ generate-synthetic-profiles:
 # Spectra plotter command
 plot-spectra:
 	$(PYTHON) $(DESIQSO)/pipelines/run_spectra_plotter.py
+
+# Stacked spectra plotter command
+spectra-stacker:
+	$(PYTHON) $(DESIQSO)/pipelines/run_spectra_stacker.py
 
 # Statistics analysis command
 plot-statistics:

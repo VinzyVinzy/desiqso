@@ -1,4 +1,8 @@
-""""""
+"""
+This module contains the entry point for the `make sample-statistics` command.
+
+It allows to plot on the flight the distribution of diverse parameters for different samples of spectra.
+"""
 
 # Local imports
 from src.desiqso.analysis.sample_statistics import plot_sample_statistics

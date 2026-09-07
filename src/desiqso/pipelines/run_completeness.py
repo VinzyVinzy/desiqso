@@ -1,5 +1,7 @@
 """
 This module contains the entry point for the `run-mock-analysis` command.
+It aims to run the completeness analysis on the flight using a synthetic H₂ profile
+in order to mesure the performances of the algorithm.
 """
 
 # Local imports

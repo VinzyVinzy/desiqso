@@ -1,5 +1,21 @@
 """
 This module contains functions to perform the completeness and purity analysis of the mock spectra sample.
+
+This module contains the following functions:
+- `create_mock_spectra_sample`: Function to create a sample of mock spectra with the same SNR and 
+redshift distribution as the real sample.
+- `completeness_analysis`: Function to perform the complete mock analysis for a given total column 
+density.
+- `snr_sample_completeness`: Function to compute the number of true positives, false positives, 
+true negatives and false negatives in the mock spectra sample for different SNR thresholds.
+- `qsoz_sample_completeness`: Function to compute the number of true positives, false positives, 
+true negatives and false negatives in the mock spectra sample for different QSO-Z slices.
+- `plot_completeness_purity_snr`: Function to plot the completeness and purity of the mock spectra 
+sample and for different SNR thresholds as a function of the total column density.
+- `completeness_analysis_qsoz`: Function to plot the completeness and purity of the mock spectra 
+sample for different QSO-Z slices and for different total column density.
+- `run_completeness_analysis`: Function to perform the completeness and purity analysis of the mock 
+spectra sample.
 """
 
 # Packages import
@@ -190,13 +206,15 @@ def create_mock_spectra_sample(profile_to_add : Profile, folder : str) -> tuple[
     return mock_spectra, true_mock_spectra
 
 # Function to perform the complete mock analysis for a given total column density
-def completeness_analysis(mock_spectra : np.ndarray[SpectrumRecord], true_mock_spectra : dict[str, SpectrumRecord], folder : str, profile_added : Profile, profile_to_fit : Profile) -> tuple[dict[int, float], dict[int, float], dict[int, float], dict[int, float]]:
+def completeness_analysis(mock_spectra : np.ndarray[SpectrumRecord], true_mock_spectra : dict[str, SpectrumRecord], folder : str, profile_added : Profile, profile_to_fit : Profile) -> tuple[tuple[dict[int, float], dict[int, float], dict[int, float], dict[int, float]], tuple[dict[int, float], dict[int, float], dict[int, float], dict[int, float]]]:
     """
     This function performs the cross-correlation analysis of the mock spectra 
     sample, plots the statistics of the mock spectra used for the analysis, 
     performs the sample completeness and purity analysis and finally computes
     the number of true positives, false positives, true negatives and false negatives
-    in the mock spectra sample for different SNR thresholds.
+    in the mock spectra sample for different SNR thresholds. It also computes the number 
+    of true positives, false positives, true negatives and false negatives in the mock 
+    spectra sample for different QSO-Z slices.
 
     :param mock_spectra: Array containing the mock spectra sample
     :type mock_spectra: np.ndarray[SpectrumRecord]
@@ -209,8 +227,8 @@ def completeness_analysis(mock_spectra : np.ndarray[SpectrumRecord], true_mock_s
     :type profile_added: Profile
     :param profile_to_fit: Profile to fit
     :type profile_to_fit: Profile
-    :return tuple[dict[int, float], dict[int, float], dict[int, float], dict[int, float]]: 
-    Tuple containing the number of true positives, false positives, true negatives and false negatives in the mock spectra sample for different SNR thresholds
+    :return tuple[tuple[dict[int, float], dict[int, float], dict[int, float], dict[int, float]], tuple[dict[int, float], dict[int, float], dict[int, float], dict[int, float]]]: 
+    Tuple containing the number of true positives, false positives, true negatives and false negatives in the mock spectra sample for different SNR thresholds and different QSO-Z slices
     """
 
     # If the cross-correlation analysis was not performed yet
@@ -229,11 +247,14 @@ def completeness_analysis(mock_spectra : np.ndarray[SpectrumRecord], true_mock_s
     # Calling the function to perform the sample completeness and purity analysis
     sample_completeness_analysis(true_mock_spectra, f"{folder}threshold_analysis/", profile_added, profile_to_fit)
 
-    # Compute the completeness and purity of the analysis for different SNR
+    # Retrieving the number of true positives, false positives, true negatives and false negatives for different SNR
     true_positives, false_positives, true_negatives, false_negatives = snr_sample_completeness(true_mock_spectra)
 
+    # Retrieving the number of true positives, false positives, true negatives and false negatives for different QSO-Z slices
+    true_positives_qsoz, false_positives_qsoz, true_negatives_qsoz, false_negatives_qsoz = qsoz_sample_completeness(true_mock_spectra) 
+
     # Returning the dictionnaries containing the true positives, false positives, true negatives and false negatives for different SNR thresholds
-    return true_positives, false_positives, true_negatives, false_negatives
+    return (true_positives, false_positives, true_negatives, false_negatives), (true_positives_qsoz, false_positives_qsoz, true_negatives_qsoz, false_negatives_qsoz)
 
 # This function computes the number of true positives, false positives, true negatives and false negatives in the mock spectra sample for different SNR thresholds
 def snr_sample_completeness(mock_spectra : dict[str, SpectrumRecord]) -> tuple[dict[int, float], dict[int, float], dict[int, float], dict[int, float]]:
@@ -256,7 +277,7 @@ def snr_sample_completeness(mock_spectra : dict[str, SpectrumRecord]) -> tuple[d
     # Mask to select only the spectra in which H₂ was detected by the algorithm
     mask_valid = (results[ColNames.IS_VALID] == 1)
 
-    # Initializing the dictionnaries containing the completeness and purity for different SNR
+    # Initializing the dictionnaries containing the number of true positives, false positives, true negatives and false negatives for different SNR
     true_positives = {}
     true_negatives = {}
     false_positives = {}
@@ -278,8 +299,52 @@ def snr_sample_completeness(mock_spectra : dict[str, SpectrumRecord]) -> tuple[d
     # Returning the dictionnaries containing the number of true positives, false positives, true negatives and false negatives for different SNR thresholds
     return true_positives, false_positives, true_negatives, false_negatives
 
-# Function to plot the completeness and purity of the mock spectra sample
-def plot_completeness_purity(all_true_positives : list[dict[int, float]], all_false_positives : list[dict[int, float]], all_true_negatives : list[dict[int, float]], all_false_negatives : list[dict[int, float]], total_column_densities : np.ndarray[float], profile_to_fit : Profile, folder : str):
+# This function computes the number of true positives, false positives, true negatives and false negatives in the mock spectra sample for different QSO-Z slices
+def qsoz_sample_completeness(mock_spectra : dict[str, SpectrumRecord]) -> tuple[dict[int, float], dict[int, float], dict[int, float], dict[int, float]]:
+    """
+    This function computes the number of true positives, false positives, true negatives 
+    and false negatives in the mock spectra sample for different QSO-Z slices. These 
+    values are later used for computing the completeness and purity of the sample after
+    being processed by the algorithm.
+
+    :param mock_spectra: Dictionnary containing the mock spectra
+    in which H₂ was added.
+    :type mock_spectra: dict[str, SpectrumRecord]
+    :return tuple[dict[int, float], dict[int, float], dict[int, float], dict[int, float]]:
+    Tuple containing the number of true positives, false positives, true negatives and false negatives in the mock spectra sample for different QSO-Z slices
+    """
+
+    # Retrieve the mock spectra analysis results
+    results = AnalysisResults._results.copy()
+    # Mask to select only the spectra in which there is H₂ to find
+    mask_true = (results[ColNames.FILENAME].isin(mock_spectra.keys()))
+    # Mask to select only the spectra in which H₂ was detected by the algorithm
+    mask_valid = (results[ColNames.IS_VALID] == 1)
+
+    # Initializing the dictionnaries containing the number of true positives, false positives, true negatives and false negatives for different QSO-Z slices
+    true_positives = {}
+    true_negatives = {}
+    false_positives = {}
+    false_negatives = {}
+
+    # Looping over the QSO-Z slices
+    for z_min in np.arange(2.5, 4.0, .25):
+        # Mask to select only spectra with a QSO-Z in the current slice
+        mask_qsoz = (results[ColNames.QSO_Z] >= z_min) & (results[ColNames.QSO_Z] < z_min + .25)
+        # Computing the number of true positive
+        true_positives[z_min] = np.sum(mask_true & mask_qsoz & mask_valid)
+        # Computing the number of false positive
+        false_positives[z_min] = np.sum(~mask_true & mask_qsoz & mask_valid)
+        # Computing the number of true negative
+        true_negatives[z_min] = np.sum(mask_true & mask_qsoz & ~mask_valid)
+        # Computing the number of false negative
+        false_negatives[z_min] = np.sum(~mask_true & mask_qsoz & ~mask_valid)
+
+    # Returning the dictionnaries containing the number of true positives, false positives, true negatives and false negatives for different QSO-Z slices
+    return true_positives, false_positives, true_negatives, false_negatives
+
+# Function to plot the completeness and purity of the mock spectra sample and for different SNR thresholds as a function of the total column density
+def plot_completeness_purity_snr(all_true_positives : list[dict[int, float]], all_false_positives : list[dict[int, float]], all_true_negatives : list[dict[int, float]], all_false_negatives : list[dict[int, float]], total_column_densities : np.ndarray[float], profile_to_fit : Profile, folder : str) -> None:
     """
     This function plots the evolution of the completeness and purity of the mock 
     spectra sample cross-correlation analysis as a function of the total column 
@@ -343,11 +408,11 @@ def plot_completeness_purity(all_true_positives : list[dict[int, float]], all_fa
         plt.grid(alpha=0.3)
 
         # Saving the plot
-        plt.savefig(f"{folder}{"-".join(key.lower().split(" "))}_vs_total-col-density.png")
+        plt.savefig(f"{folder}{"snr_"+"-".join(key.lower().split(" "))}_vs_total-col-density.png")
         plt.close()
     
     # Saving the results of the analysis in the dedicated file
-    with open(f"{folder}completeness_purity_analysis.txt", "w") as file:
+    with open(f"{folder}completeness_purity_analysis_snr.txt", "w") as file:
         # Writing the header
         file.write("\t".join(["log(N)", "SNR", "True positives", "True negatives", "False positives", "False negatives", "Completeness (%)", "Purity (%)", "False detection rate (%)"]) + "\n")
         # Looping over the total column densities
@@ -355,6 +420,145 @@ def plot_completeness_purity(all_true_positives : list[dict[int, float]], all_fa
             # Looping over the SNR values
             for snr in completenesses[0].keys():
                 file.write(f"{log10(total_column_densities[i])}\t{snr}\t{all_true_positives[i][snr]}\t{all_true_negatives[i][snr]}\t{all_false_positives[i][snr]}\t{all_false_negatives[i][snr]}\t{completenesses[i][snr]*100}\t{purities[i][snr]*100}\t{false_detection_rates[i][snr]*100}\n")
+
+    # Returning to the main function
+    return
+
+# Function to plot the completeness and purity of the mock spectra sample for different QSO-Z slices and for different total column density
+def completeness_analysis_qsoz(all_true_positives : list[dict[int, float]], all_false_positives : list[dict[int, float]], all_true_negatives : list[dict[int, float]], all_false_negatives : list[dict[int, float]], total_column_densities : np.ndarray[float], profile_to_fit : Profile, folder : str) -> None:
+    """
+    This function plots the evolution of the completeness and purity of the mock 
+    spectra sample cross-correlation analysis as a function of the total column 
+    density and the QSO-Z slice. It also plots the completness, purity and false
+    detection rate as a function of the QSO-Z for different total column density.
+    Also saves the values to a file for manual inspection.
+
+    :param all_true_positives: List containing the dictionnaries containing the number of true positives in the mock spectra sample for different SNR thresholds.
+    :type all_true_positives: list[dict[int, float]]
+    :param all_false_positives: List containing the dictionnaries containing the number of false positives in the mock spectra sample for different SNR thresholds.
+    :type all_false_positives: list[dict[int, float]]
+    :param all_true_negatives: List containing the dictionnaries containing the number of true negatives in the mock spectra sample for different SNR thresholds.
+    :type all_true_negatives: list[dict[int, float]]
+    :param all_false_negatives: List containing the dictionnaries containing the number of false negatives in the mock spectra sample for different SNR thresholds.
+    :type all_false_negatives: list[dict[int, float]]
+    :param total_column_densities: Array containing the total column density values.
+    :type total_column_densities: np.ndarray[float]
+    :param profile_to_fit: Profile used for the cross-correlation analysis.
+    :type profile_to_fit: Profile
+    :param folder: Output folder.
+    :type folder: str
+    """
+
+    # Turn interactive mode off
+    plt.ioff()
+
+    # Updating the matplotlib settings
+    settings["xtick.top"] = True
+    plt.rcParams.update(**settings)
+
+    # ==================
+    # Completeness, purities and false detection rates as a function of the total column density from the results for different QSO-Z slices
+    # ==================
+
+    # Compute the completenesses, purities and false detection rates from the results
+    completenesses = [{z_min : (all_true_positives[i][z_min] / (all_true_positives[i][z_min] + all_true_negatives[i][z_min])) for z_min in all_true_positives[i].keys()} for i in range(len(all_true_positives))]
+    purities = [{z_min : (1 - (all_false_positives[i][z_min] / (all_true_positives[i][z_min] + all_false_positives[i][z_min]))) if (all_true_positives[i][z_min] + all_false_positives[i][z_min]) > 0. else 0. for z_min in all_true_positives[i].keys()} for i in range(len(all_true_positives))]
+    false_detection_rates = [{z_min : (all_false_positives[i][z_min] / (all_false_positives[i][z_min] + all_false_negatives[i][z_min])) for z_min in all_true_positives[i].keys()} for i in range(len(all_true_positives))]
+
+    # Loop over completenesses and purities
+    for key, values_list in {"Completeness" : completenesses, "Purity" : purities, "False detection rate" : false_detection_rates}.items():
+
+        # Creating the figure and axis
+        _, ax = plt.subplots(figsize=(12,8))
+
+        # Setting the labels and title of the plot
+        plt.xlabel("Total column density (log10)")
+        plt.ylabel(f"{key} (%)")
+        plt.title(rf"{key} for the base program and with {ColNames.QSO_Z} slices between {list(completenesses[0].keys())[0]} and {list(completenesses[0].keys())[-1]}"+f"\nProfile: {profile_to_fit.name}")
+        # Setting the limits of the plot
+        plt.xlim(np.min(np.log10(total_column_densities))-0.1, np.max(np.log10(total_column_densities))+0.1)
+        plt.ylim(-5, 105)
+
+        # Looping over SNR values
+        for z_min in values_list[0].keys():
+            # Retrieving the values for the current SNR
+            values = [values_dict[z_min]*100 for values_dict in values_list]
+            # Plotting the values
+            ax.plot(np.log10(total_column_densities), values, label=f"{z_min} <= {ColNames.QSO_Z} <= {z_min+.25}", alpha=0.7)
+
+        # Adding the legend
+        plt.legend()
+        plt.grid(alpha=0.3)
+
+        # Saving the plot
+        plt.savefig(f"{folder}{"qso-z_"+"-".join(key.lower().split(" "))}_vs_total-col-density.png")
+
+        # Closing the plot
+        plt.close()
+    
+    # ==================
+    # Completeness, purities and false detection rates as a function of QSO-Z from the results for different total column densities
+    # ==================
+
+    # Loop over the different total column densities
+    for i, density in enumerate(total_column_densities):
+
+        # Creating the figure
+        _, ax = plt.subplots(figsize=(12,8))
+
+        # Retrieving the true positives, false positives, true negatives and false negatives for the current total column density
+        tp = all_true_positives[i]
+        tn = all_true_negatives[i]
+        fp = all_false_positives[i]
+        fn = all_false_negatives[i]
+
+        # Computing the completenesses, purities and false detection rates for the current total column density
+        z_completenesses = np.asarray([tp[z_min] / (tp[z_min] + tn[z_min]) for z_min in tp.keys()])*100
+        z_purities = np.asarray([1 - (fp[z_min] / (tp[z_min] + fp[z_min])) if (tp[z_min] + fp[z_min]) > 0. else 0. for z_min in tp.keys()])*100
+        z_false_detection_rates = np.asarray([fp[z_min] / (fp[z_min] + fn[z_min]) for z_min in tp.keys()])*100
+
+        # Computing QSO-Z bins center
+        bins_center = [z_min + .25/2. for z_min in tp.keys()]
+
+        # Plotting the histogram of the completenesses, purities and false detection rates for the current total column density
+        ax.errorbar(bins_center, z_completenesses, xerr=.25/2., label="Completeness", fmt="o", color="g", ecolor="g", capsize=4, capthick=1)
+        ax.errorbar(bins_center, z_purities, xerr=.25/2., label="Purity", fmt="o", color="k", ecolor="k", capsize=4, capthick=1)
+        ax.errorbar(bins_center, z_false_detection_rates, xerr=.25/2., label="False detection rate", fmt="o", color="r", ecolor="r", capsize=4, capthick=1)
+
+        # Setting axis limits
+        plt.xlim(bins_center[0]-.25/2.-.1, bins_center[-1]+.25/2.+.1)
+        plt.ylim(-5, 105)
+
+        # Setting the labels and title of the plot
+        plt.xlabel(f"{ColNames.QSO_Z}")
+        plt.ylabel("Percentage (%)")
+        plt.title(f"Completeness, purity and false detection rate for the base program as a function of {ColNames.QSO_Z}\n"+rf"Mocks: $\log_{{10}}(N_{{H_2}}) = {log10(density):.1f}$ | Profile fitted: $\log_{{10}}(N_{{H_2}}) = {log10(profile_to_fit.Ntot):.1f}$")
+
+        # Adding the legend
+        plt.legend()
+        plt.grid(alpha=0.3)
+
+        # Saving the plot
+        outputfile = f"{folder}qso-z/comp-pur-fr_vs_qso-z_{log10(density):.1f}.png"
+        os.makedirs(os.path.dirname(outputfile), exist_ok=True)
+        plt.savefig(outputfile)
+
+        # Closing the plot
+        plt.close()
+
+    # ==================
+    # Saving results
+    # ==================
+
+    # Saving the results of the analysis in the dedicated file
+    with open(f"{folder}completeness_purity_analysis_qso-z.txt", "w") as file:
+        # Writing the header
+        file.write("\t".join(["log(N)", "QSO-Z slice", "True positives", "True negatives", "False positives", "False negatives", "Completeness (%)", "Purity (%)", "False detection rate (%)"]) + "\n")
+        # Looping over the total column densities
+        for i in range(len(total_column_densities)):
+            # Looping over the SNR values
+            for z_min in completenesses[0].keys():
+                file.write(f"{log10(total_column_densities[i])}\t{z_min}-{z_min+.25}\t{all_true_positives[i][z_min]}\t{all_true_negatives[i][z_min]}\t{all_false_positives[i][z_min]}\t{all_false_negatives[i][z_min]}\t{completenesses[i][z_min]*100}\t{purities[i][z_min]*100}\t{false_detection_rates[i][z_min]*100}\n")
 
     # Returning to the main function
     return
@@ -394,11 +598,16 @@ def run_completeness_analysis(profile_to_fit : Profile) -> None:
     # List of total column density values to perform the completeness analysis on
     total_column_densities = 10**np.linspace(18, 20.5, 6)
 
-    # Initializing lists to store the completeness and purity values
+    # Initializing lists to store the completeness and purity values for different total column densities and SNR thresholds
     all_true_positives = []
     all_false_positives = []
     all_true_negatives = []
     all_false_negatives = []
+    # Initializing lists to store the completeness and purity values for different total column densities and QSO-Z slices
+    all_qsoz_true_positives = []
+    all_qsoz_false_positives = []
+    all_qsoz_true_negatives = []
+    all_qsoz_false_negatives = []
 
     # Looping over the total column densities
     for density in total_column_densities:
@@ -428,23 +637,37 @@ def run_completeness_analysis(profile_to_fit : Profile) -> None:
             mock_spectra, true_mock_spectra = create_mock_spectra_sample(profile_to_add, subfolder) 
         # Else, load directly the mock spectra sample and the dictionnary containing the real mock spetcra from local files
         else :
-            # Saving the dictionary of the mock spectra in a pickle file
+            # Loading the dictionary of the mock spectra in a pickle file
             with open(f"{subfolder}true_mock_spectra.pkl", "rb") as file:
-                true_mock_spectra =pickle.load(file)
-            # Saving the array of the mock spectra in a pickle file
+                true_mock_spectra = pickle.load(file)
+            # Loading the array of the mock spectra in a pickle file
             with open(f"{subfolder}mock_spectra.pkl", "rb") as file:
                 mock_spectra = pickle.load(file)
             # Inform user
             print(f"\n[INFO] Loaded {len(mock_spectra)} mock spectra sample from {subfolder}, with {len(true_mock_spectra)} real mock spectra.")
 
         # Calling the function to perform the completeness analysis on the sample of mock spectra
-        true_positives, false_positives, true_negatives, false_negatives = completeness_analysis(mock_spectra, true_mock_spectra, subfolder, profile_to_add, profile_to_fit)
+        snr_results, qsoz_results = completeness_analysis(mock_spectra, true_mock_spectra, subfolder, profile_to_add, profile_to_fit)
 
-        # Appending the samples of true positives, false positives, true negatives and false negatives to their respective lists
+        # Unpacking the values of true positives, false positives, true negatives and false negatives for different SNR thresholds
+        true_positives, false_positives, true_negatives, false_negatives = snr_results
+        # Unpacking the values of true positives, false positives, true negatives and false negatives for different QSO-Z slices
+        qsoz_true_positives, qsoz_false_positives, qsoz_true_negatives, qsoz_false_negatives = qsoz_results
+
+        # Appending the samples of true positives, false positives, true negatives and false negatives to their respective lists for different SNR thresholds
         all_true_positives.append(true_positives)
         all_false_positives.append(false_positives)
         all_true_negatives.append(true_negatives)
         all_false_negatives.append(false_negatives)
+
+        # Appending samples of true positives, false positives, true negatives and false negatives to their respective lists for different QSO-Z slices
+        all_qsoz_true_positives.append(qsoz_true_positives)
+        all_qsoz_false_positives.append(qsoz_false_positives)
+        all_qsoz_true_negatives.append(qsoz_true_negatives)
+        all_qsoz_false_negatives.append(qsoz_false_negatives)
     
     # Calling the function to plot the completeness and purity values for different total column densities and SNR
-    plot_completeness_purity(all_true_positives, all_false_positives, all_true_negatives, all_false_negatives, total_column_densities, profile_to_fit, ANALYSIS_FOLDER)
+    plot_completeness_purity_snr(all_true_positives, all_false_positives, all_true_negatives, all_false_negatives, total_column_densities, profile_to_fit, ANALYSIS_FOLDER)
+
+    # Calling the function to plot the completeness and purity values for different total column densities and QSO-Z slices
+    completeness_analysis_qsoz(all_qsoz_true_positives, all_qsoz_false_positives, all_qsoz_true_negatives, all_qsoz_false_negatives, total_column_densities, profile_to_fit, ANALYSIS_FOLDER)
